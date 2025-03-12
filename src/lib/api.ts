@@ -1,0 +1,219 @@
+
+import { 
+  Student, 
+  Teacher, 
+  User, 
+  Class, 
+  Attendance, 
+  Grade, 
+  Payment, 
+  Notification, 
+  Message, 
+  ActivityItem, 
+  DashboardStats,
+  UserRole
+} from './types';
+
+// Mock data for demonstration
+const USERS: User[] = [
+  { id: "1", name: "Admin User", email: "admin@focus.edu", role: "admin", avatar: "/placeholder.svg" },
+  { id: "2", name: "John Smith", email: "john@focus.edu", role: "teacher", avatar: "/placeholder.svg" },
+  { id: "3", name: "Emma Wilson", email: "emma@focus.edu", role: "student", avatar: "/placeholder.svg" },
+  { id: "4", name: "Robert Wilson", email: "robert@focus.edu", role: "parent", avatar: "/placeholder.svg" },
+];
+
+const STUDENTS: Student[] = [
+  { 
+    id: "1", 
+    name: "Emma Wilson", 
+    email: "emma@focus.edu", 
+    grade: "10th", 
+    enrollmentDate: "2022-09-01", 
+    parentId: "4", 
+    avatar: "/placeholder.svg",
+    address: "123 School St, Education City",
+    phoneNumber: "(555) 123-4567",
+    dateOfBirth: "2006-05-15",
+    status: "active",
+    attendance: 94,
+    averageGrade: 88
+  },
+  { 
+    id: "2", 
+    name: "Michael Johnson", 
+    email: "michael@focus.edu", 
+    grade: "10th", 
+    enrollmentDate: "2022-09-02", 
+    avatar: "/placeholder.svg",
+    address: "456 Learning Ave, Knowledge Town",
+    phoneNumber: "(555) 234-5678",
+    dateOfBirth: "2006-08-23",
+    status: "active",
+    attendance: 89,
+    averageGrade: 92
+  },
+  { 
+    id: "3", 
+    name: "Sophia Brown", 
+    email: "sophia@focus.edu", 
+    grade: "11th", 
+    enrollmentDate: "2021-09-01", 
+    avatar: "/placeholder.svg",
+    address: "789 Education Blvd, Wisdom City",
+    phoneNumber: "(555) 345-6789",
+    dateOfBirth: "2005-02-10",
+    status: "active",
+    attendance: 97,
+    averageGrade: 95
+  },
+  { 
+    id: "4", 
+    name: "Daniel Taylor", 
+    email: "daniel@focus.edu", 
+    grade: "9th", 
+    enrollmentDate: "2023-09-01", 
+    avatar: "/placeholder.svg",
+    address: "101 School Rd, Learning Heights",
+    phoneNumber: "(555) 456-7890",
+    dateOfBirth: "2007-11-05",
+    status: "active",
+    attendance: 91,
+    averageGrade: 84
+  },
+  { 
+    id: "5", 
+    name: "Olivia Martinez", 
+    email: "olivia@focus.edu", 
+    grade: "12th", 
+    enrollmentDate: "2020-09-01", 
+    avatar: "/placeholder.svg",
+    address: "202 Academy St, Scholarship Hills",
+    phoneNumber: "(555) 567-8901",
+    dateOfBirth: "2004-07-22",
+    status: "active",
+    attendance: 96,
+    averageGrade: 91
+  },
+];
+
+const ACTIVITIES: ActivityItem[] = [
+  {
+    id: "1",
+    userId: "2",
+    userName: "John Smith",
+    userAvatar: "/placeholder.svg",
+    action: "graded assignment for",
+    target: "Class 10A - Mathematics",
+    date: "2023-09-15T10:30:00",
+    type: "grade"
+  },
+  {
+    id: "2",
+    userId: "1",
+    userName: "Admin User",
+    userAvatar: "/placeholder.svg",
+    action: "added new student",
+    target: "Daniel Taylor",
+    date: "2023-09-14T14:15:00",
+    type: "system"
+  },
+  {
+    id: "3",
+    userId: "3",
+    userName: "Emma Wilson",
+    userAvatar: "/placeholder.svg",
+    action: "submitted assignment for",
+    target: "English Literature",
+    date: "2023-09-14T09:45:00",
+    type: "system"
+  },
+  {
+    id: "4",
+    userId: "2",
+    userName: "John Smith",
+    userAvatar: "/placeholder.svg",
+    action: "marked attendance for",
+    target: "Class 10A",
+    date: "2023-09-13T08:30:00",
+    type: "attendance"
+  },
+  {
+    id: "5",
+    userId: "4",
+    userName: "Robert Wilson",
+    userAvatar: "/placeholder.svg",
+    action: "made payment for",
+    target: "Tuition Fee - September",
+    date: "2023-09-12T11:20:00",
+    type: "payment"
+  },
+];
+
+const DASHBOARD_STATS: DashboardStats = {
+  totalStudents: 320,
+  totalTeachers: 28,
+  averageAttendance: 93,
+  averageGrade: 86,
+  pendingPayments: 45,
+  upcomingEvents: 12
+};
+
+// Simulated API delay
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+// API client
+class ApiClient {
+  // Authentication
+  async login(email: string, password: string): Promise<User> {
+    await delay(800);
+    const user = USERS.find(u => u.email === email);
+    if (!user) {
+      throw new Error("Invalid credentials");
+    }
+    return user;
+  }
+  
+  // Dashboard
+  async getDashboardStats(role: UserRole): Promise<DashboardStats> {
+    await delay(500);
+    return DASHBOARD_STATS;
+  }
+  
+  async getRecentActivity(limit: number = 5): Promise<ActivityItem[]> {
+    await delay(600);
+    return ACTIVITIES.slice(0, limit);
+  }
+  
+  // Students
+  async getStudents(query?: string): Promise<Student[]> {
+    await delay(700);
+    let students = [...STUDENTS];
+    
+    if (query) {
+      const lowercasedQuery = query.toLowerCase();
+      students = students.filter(student => 
+        student.name.toLowerCase().includes(lowercasedQuery) || 
+        student.email.toLowerCase().includes(lowercasedQuery) ||
+        student.grade.toLowerCase().includes(lowercasedQuery)
+      );
+    }
+    
+    return students;
+  }
+  
+  async getStudentById(id: string): Promise<Student | null> {
+    await delay(500);
+    return STUDENTS.find(s => s.id === id) || null;
+  }
+  
+  async createStudent(student: Omit<Student, "id">): Promise<Student> {
+    await delay(800);
+    const newStudent = {
+      ...student,
+      id: Math.random().toString(36).substr(2, 9)
+    };
+    return newStudent;
+  }
+}
+
+export const api = new ApiClient();
