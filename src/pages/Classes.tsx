@@ -33,6 +33,9 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
+import ClassFormDialog from '@/components/classes/ClassFormDialog';
+import ClassFilters, { ClassFilters as ClassFiltersType } from '@/components/classes/ClassFilters';
+import { toast } from '@/hooks/use-toast';
 
 const Classes = () => {
   const { user } = useAuth();
@@ -41,37 +44,75 @@ const Classes = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredClasses, setFilteredClasses] = useState<Class[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const [isAddClassOpen, setIsAddClassOpen] = useState(false);
+  const [filters, setFilters] = useState<ClassFiltersType>({
+    subjects: [],
+    weekdays: [],
+  });
+
+  const uniqueSubjects = [...new Set(classes.map(classItem => classItem.subject))];
+
+  const fetchClasses = async () => {
+    try {
+      setIsLoading(true);
+      const data = await api.getClasses();
+      setClasses(data);
+      setFilteredClasses(data);
+    } catch (error) {
+      console.error('Error fetching classes:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load classes. Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchClasses = async () => {
-      try {
-        setIsLoading(true);
-        const data = await api.getClasses();
-        setClasses(data);
-        setFilteredClasses(data);
-      } catch (error) {
-        console.error('Error fetching classes:', error);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
     fetchClasses();
   }, []);
 
   useEffect(() => {
-    if (searchQuery.trim() === '') {
-      setFilteredClasses(classes);
-    } else {
+    let filtered = [...classes];
+    
+    // Apply search filter
+    if (searchQuery.trim() !== '') {
       const lowercasedQuery = searchQuery.toLowerCase();
-      const filtered = classes.filter(classItem => 
+      filtered = filtered.filter(classItem => 
         classItem.name.toLowerCase().includes(lowercasedQuery) || 
         classItem.subject.toLowerCase().includes(lowercasedQuery) || 
         classItem.teacherName.toLowerCase().includes(lowercasedQuery)
       );
-      setFilteredClasses(filtered);
     }
-  }, [searchQuery, classes]);
+    
+    // Apply subject filters
+    if (filters.subjects.length > 0) {
+      filtered = filtered.filter(classItem => 
+        filters.subjects.includes(classItem.subject)
+      );
+    }
+    
+    // Apply day filters
+    if (filters.weekdays.length > 0) {
+      filtered = filtered.filter(classItem => 
+        classItem.schedule.some(schedule => 
+          filters.weekdays.includes(schedule.day)
+        )
+      );
+    }
+    
+    setFilteredClasses(filtered);
+  }, [searchQuery, classes, filters]);
+
+  const handleClassCreated = (newClass: Class) => {
+    setClasses(prev => [...prev, newClass]);
+  };
+
+  const handleFilterChange = (newFilters: ClassFiltersType) => {
+    setFilters(newFilters);
+  };
 
   const getScheduleLabel = (schedules: { day: string; startTime: string; endTime: string; room: string }[]) => {
     if (schedules.length === 0) return 'No schedule';
@@ -102,10 +143,21 @@ const Classes = () => {
                 <TabsTrigger value="list" onClick={() => setViewMode('list')}>List</TabsTrigger>
               </TabsList>
             </Tabs>
-            <Button variant="outline" size="icon">
-              <Filter className="h-4 w-4" />
-            </Button>
-            <Button className="flex-1 sm:flex-none">
+            
+            <ClassFilters 
+              trigger={
+                <Button variant="outline" size="icon">
+                  <Filter className="h-4 w-4" />
+                </Button>
+              }
+              onFiltersChange={handleFilterChange}
+              availableSubjects={uniqueSubjects}
+            />
+            
+            <Button 
+              className="flex-1 sm:flex-none"
+              onClick={() => setIsAddClassOpen(true)}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Class
             </Button>
@@ -133,7 +185,7 @@ const Classes = () => {
             ))
           ) : filteredClasses.length === 0 ? (
             <div className="col-span-full py-10 text-center text-gray-500">
-              No classes found. Try a different search term.
+              No classes found. Try a different search term or filter.
             </div>
           ) : (
             filteredClasses.map((classItem) => (
@@ -288,6 +340,13 @@ const Classes = () => {
           </div>
         </div>
       )}
+      
+      {/* Add Class Dialog */}
+      <ClassFormDialog 
+        open={isAddClassOpen} 
+        onOpenChange={setIsAddClassOpen}
+        onClassCreated={handleClassCreated}
+      />
     </div>
   );
 };
