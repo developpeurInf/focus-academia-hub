@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -6,7 +5,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { X, Plus, Trash } from 'lucide-react';
 import { api } from '@/lib/api';
 import { toast } from '@/hooks/use-toast';
-import { ClassSchedule } from '@/lib/types';
+import { Class, ClassSchedule } from '@/lib/types';
 
 import {
   Dialog,
@@ -52,6 +51,7 @@ const defaultSchedule: ClassSchedule = {
   room: '',
 };
 
+// Update the schema to match the Class type
 const classSchema = z.object({
   name: z.string().min(3, { message: 'Class name must be at least 3 characters' }),
   subject: z.string().min(2, { message: 'Subject is required' }),
@@ -73,7 +73,7 @@ type ClassFormValues = z.infer<typeof classSchema>;
 interface ClassFormDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onClassCreated?: (newClass: any) => void;
+  onClassCreated?: (newClass: Class) => void;
 }
 
 export default function ClassFormDialog({
@@ -122,6 +122,7 @@ export default function ClassFormDialog({
 
   const onSubmit = async (data: ClassFormValues) => {
     try {
+      // Note: data is now correctly typed and matches Omit<Class, "id">
       const newClass = await api.createClass(data);
       toast({
         title: 'Success',
