@@ -1,4 +1,3 @@
-
 import { 
   Student, 
   Teacher, 
@@ -158,6 +157,83 @@ const DASHBOARD_STATS: DashboardStats = {
   upcomingEvents: 12
 };
 
+// Mock classes data
+const CLASSES: Class[] = [
+  {
+    id: "1",
+    name: "Math 101",
+    subject: "Mathematics",
+    teacherId: "2",
+    teacherName: "John Smith",
+    schedule: [
+      { day: "Monday", startTime: "09:00", endTime: "10:30", room: "A101" },
+      { day: "Wednesday", startTime: "09:00", endTime: "10:30", room: "A101" }
+    ],
+    studentCount: 28
+  },
+  {
+    id: "2",
+    name: "English Literature",
+    subject: "English",
+    teacherId: "5",
+    teacherName: "Sarah Johnson",
+    schedule: [
+      { day: "Tuesday", startTime: "11:00", endTime: "12:30", room: "B205" },
+      { day: "Thursday", startTime: "11:00", endTime: "12:30", room: "B205" }
+    ],
+    studentCount: 24
+  },
+  {
+    id: "3",
+    name: "Physics Fundamentals",
+    subject: "Physics",
+    teacherId: "6",
+    teacherName: "Robert Chen",
+    schedule: [
+      { day: "Monday", startTime: "13:00", endTime: "14:30", room: "C310" },
+      { day: "Wednesday", startTime: "13:00", endTime: "14:30", room: "C310" },
+      { day: "Friday", startTime: "10:00", endTime: "11:30", room: "C310" }
+    ],
+    studentCount: 20
+  },
+  {
+    id: "4",
+    name: "Biology 101",
+    subject: "Biology",
+    teacherId: "7",
+    teacherName: "Maria Garcia",
+    schedule: [
+      { day: "Tuesday", startTime: "09:00", endTime: "10:30", room: "D110" },
+      { day: "Thursday", startTime: "09:00", endTime: "10:30", room: "D110" }
+    ],
+    studentCount: 26
+  },
+  {
+    id: "5",
+    name: "World History",
+    subject: "History",
+    teacherId: "8",
+    teacherName: "James Wilson",
+    schedule: [
+      { day: "Wednesday", startTime: "11:00", endTime: "12:30", room: "A210" },
+      { day: "Friday", startTime: "13:00", endTime: "14:30", room: "A210" }
+    ],
+    studentCount: 30
+  },
+  {
+    id: "6",
+    name: "Chemistry Basics",
+    subject: "Chemistry",
+    teacherId: "9",
+    teacherName: "Emily Davis",
+    schedule: [
+      { day: "Monday", startTime: "11:00", endTime: "12:30", room: "C220" },
+      { day: "Thursday", startTime: "13:00", endTime: "14:30", room: "C220" }
+    ],
+    studentCount: 22
+  },
+];
+
 // Simulated API delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -213,6 +289,62 @@ class ApiClient {
       id: Math.random().toString(36).substr(2, 9)
     };
     return newStudent;
+  }
+  
+  // Classes
+  async getClasses(query?: string): Promise<Class[]> {
+    await delay(600);
+    let classes = [...CLASSES];
+    
+    if (query) {
+      const lowercasedQuery = query.toLowerCase();
+      classes = classes.filter(classItem => 
+        classItem.name.toLowerCase().includes(lowercasedQuery) || 
+        classItem.subject.toLowerCase().includes(lowercasedQuery) ||
+        classItem.teacherName.toLowerCase().includes(lowercasedQuery)
+      );
+    }
+    
+    return classes;
+  }
+  
+  async getClassById(id: string): Promise<Class | null> {
+    await delay(500);
+    return CLASSES.find(c => c.id === id) || null;
+  }
+  
+  async createClass(classData: Omit<Class, "id">): Promise<Class> {
+    await delay(800);
+    const newClass = {
+      ...classData,
+      id: Math.random().toString(36).substr(2, 9)
+    };
+    return newClass;
+  }
+  
+  async updateClass(id: string, classData: Partial<Class>): Promise<Class> {
+    await delay(700);
+    const classIndex = CLASSES.findIndex(c => c.id === id);
+    if (classIndex === -1) {
+      throw new Error("Class not found");
+    }
+    
+    const updatedClass = {
+      ...CLASSES[classIndex],
+      ...classData
+    };
+    
+    return updatedClass;
+  }
+  
+  async deleteClass(id: string): Promise<boolean> {
+    await delay(600);
+    const classIndex = CLASSES.findIndex(c => c.id === id);
+    if (classIndex === -1) {
+      throw new Error("Class not found");
+    }
+    
+    return true;
   }
 }
 
