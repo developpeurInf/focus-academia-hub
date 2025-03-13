@@ -1,3 +1,4 @@
+
 import React from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
@@ -51,7 +52,7 @@ const defaultSchedule: ClassSchedule = {
   room: '',
 };
 
-// Update the schema to match the Class type
+// Update the schema to match the Class type - make all required fields non-optional
 const classSchema = z.object({
   name: z.string().min(3, { message: 'Class name must be at least 3 characters' }),
   subject: z.string().min(2, { message: 'Subject is required' }),
@@ -122,8 +123,18 @@ export default function ClassFormDialog({
 
   const onSubmit = async (data: ClassFormValues) => {
     try {
-      // Note: data is now correctly typed and matches Omit<Class, "id">
-      const newClass = await api.createClass(data);
+      // Explicitly cast the data to ensure it meets the required type
+      const classData: Omit<Class, "id"> = {
+        name: data.name,
+        subject: data.subject,
+        teacherId: data.teacherId,
+        teacherName: data.teacherName,
+        studentCount: data.studentCount,
+        schedule: data.schedule,
+      };
+      
+      // Now pass the properly typed data to the API
+      const newClass = await api.createClass(classData);
       toast({
         title: 'Success',
         description: 'Class has been created successfully',

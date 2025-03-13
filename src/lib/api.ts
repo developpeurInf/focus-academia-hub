@@ -313,6 +313,7 @@ class ApiClient {
     return CLASSES.find(c => c.id === id) || null;
   }
   
+  // Update this method to be explicit about the parameter type
   async createClass(classData: Omit<Class, "id">): Promise<Class> {
     await delay(800);
     const newClass = {
