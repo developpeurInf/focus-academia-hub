@@ -237,38 +237,126 @@ const CLASSES: Class[] = [
 // Simulated API delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Base API URL
+const API_BASE_URL = 'http://192.168.1.38:9090/api';
+
 // API client
 class ApiClient {
   // Authentication
   async login(email: string, password: string): Promise<{ user: User; access_token: string }> {
-    await delay(800);
-    const user = USERS.find(u => u.email === email);
-    if (!user) {
-      throw new Error("Invalid credentials");
+    try {
+      const response = await fetch(`${API_BASE_URL}/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Login failed');
+      }
+      
+      const data = await response.json();
+      return {
+        user: data.user,
+        access_token: data.access_token
+      };
+    } catch (error) {
+      console.error('API login error:', error);
+      throw error;
     }
-    
-    // Generate a mock access token
-    const access_token = `mock_token_${Math.random().toString(36).substring(2)}`;
-    
-    return { 
-      user,
-      access_token
-    };
   }
   
   // Dashboard
-  async getDashboardStats(role: UserRole): Promise<DashboardStats> {
+  async getDashboardStats(token: string | null, role: UserRole): Promise<DashboardStats> {
+    if (token) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/dashboard/stats`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch dashboard stats');
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Failed to fetch dashboard stats:', error);
+        // Fallback to mock data
+        return DASHBOARD_STATS;
+      }
+    }
+    
+    // Fallback for demo/development
     await delay(500);
     return DASHBOARD_STATS;
   }
   
-  async getRecentActivity(limit: number = 5): Promise<ActivityItem[]> {
+  async getRecentActivity(token: string | null, limit: number = 5): Promise<ActivityItem[]> {
+    if (token) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/dashboard/activity?limit=${limit}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch activity');
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Failed to fetch activity:', error);
+        // Fallback to mock data
+        return ACTIVITIES.slice(0, limit);
+      }
+    }
+    
+    // Fallback for demo/development
     await delay(600);
     return ACTIVITIES.slice(0, limit);
   }
   
   // Students
-  async getStudents(query?: string): Promise<Student[]> {
+  async getStudents(token: string | null, query?: string): Promise<Student[]> {
+    if (token) {
+      try {
+        const url = query 
+          ? `${API_BASE_URL}/students?query=${encodeURIComponent(query)}`
+          : `${API_BASE_URL}/students`;
+          
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch students');
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Failed to fetch students:', error);
+        // Fallback to mock data with filtering
+        let students = [...STUDENTS];
+        if (query) {
+          const lowercasedQuery = query.toLowerCase();
+          students = students.filter(student => 
+            student.name.toLowerCase().includes(lowercasedQuery) || 
+            student.email.toLowerCase().includes(lowercasedQuery) ||
+            student.grade.toLowerCase().includes(lowercasedQuery)
+          );
+        }
+        return students;
+      }
+    }
+    
+    // Fallback for demo/development
     await delay(700);
     let students = [...STUDENTS];
     
@@ -299,20 +387,45 @@ class ApiClient {
   }
   
   // Classes
-  async getClasses(query?: string): Promise<Class[]> {
-    await delay(600);
-    let classes = [...CLASSES];
-    
-    if (query) {
-      const lowercasedQuery = query.toLowerCase();
-      classes = classes.filter(classItem => 
-        classItem.name.toLowerCase().includes(lowercasedQuery) || 
-        classItem.subject.toLowerCase().includes(lowercasedQuery) ||
-        classItem.teacherName.toLowerCase().includes(lowercasedQuery)
-      );
+  async getClasses(token: string | null, query?: string): Promise<Class[]> {
+    if (token) {
+      try {
+        const url = query 
+          ? `${API_BASE_URL}/classes?query=${encodeURIComponent(query)}`
+          : `${API_BASE_URL}/classes`;
+          
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch classes');
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Failed to fetch classes:', error);
+        // Fallback to mock data
+        return this.filterClasses(CLASSES, query);
+      }
     }
     
-    return classes;
+    // Fallback for demo/development
+    await delay(600);
+    return this.filterClasses(CLASSES, query);
+  }
+  
+  private filterClasses(classes: Class[], query?: string): Class[] {
+    if (!query) return [...classes];
+    
+    const lowercasedQuery = query.toLowerCase();
+    return classes.filter(classItem => 
+      classItem.name.toLowerCase().includes(lowercasedQuery) || 
+      classItem.subject.toLowerCase().includes(lowercasedQuery) ||
+      classItem.teacherName.toLowerCase().includes(lowercasedQuery)
+    );
   }
   
   async getClassById(id: string): Promise<Class | null> {

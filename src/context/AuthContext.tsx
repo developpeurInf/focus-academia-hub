@@ -45,17 +45,36 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      const response = await api.login(email, password);
-      setUser(response.user);
-      setAccessToken(response.access_token);
+      
+      // Use fetch directly to connect to your backend server
+      const response = await fetch('http://192.168.1.38:9090/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      
+      if (!response.ok) {
+        throw new Error('Login failed');
+      }
+      
+      const data = await response.json();
+      
+      // Extract user and token from response
+      const userData = data.user;
+      const token = data.access_token;
+      
+      setUser(userData);
+      setAccessToken(token);
       
       // Store in localStorage
-      localStorage.setItem('focus_user', JSON.stringify(response.user));
-      localStorage.setItem('focus_token', response.access_token);
+      localStorage.setItem('focus_user', JSON.stringify(userData));
+      localStorage.setItem('focus_token', token);
       
       toast({
         title: "Login successful",
-        description: `Welcome back, ${response.user.name}!`,
+        description: `Welcome back, ${userData.name}!`,
       });
     } catch (error) {
       console.error('Login error:', error);
