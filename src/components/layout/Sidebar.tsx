@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { 
@@ -47,7 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
       label: 'Students', 
       icon: GraduationCap, 
       href: '/students', 
-      roles: ['admin', 'teacher'],
+      roles: ['admin', 'teacher', 'student', 'parent'],
       badge: { text: 'New', variant: 'default' } 
     },
     { 

@@ -1,54 +1,39 @@
-
 import React from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { X, Plus, Trash } from 'lucide-react';
-import { api } from '@/lib/api';
-import { toast } from '@/hooks/use-toast';
+import { CalendarDays, Clock, Home } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/components/ui/use-toast';
+import * as api from '@/lib/api';
 import { Class, ClassSchedule } from '@/lib/types';
 
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogClose,
-} from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from '@/components/ui/form';
-import { 
-  Select, 
-  SelectContent, 
-  SelectItem, 
-  SelectTrigger, 
-  SelectValue 
-} from '@/components/ui/select';
+interface ClassFormDialogProps {
+  open: boolean;
+  onClose: () => void;
+  onClassCreated?: (newClass: Class) => void;
+}
 
-const weekdays = [
-  'Monday',
-  'Tuesday',
-  'Wednesday',
-  'Thursday',
-  'Friday',
-  'Saturday',
-  'Sunday',
+interface Teacher {
+  id: string;
+  name: string;
+}
+
+const teachers: Teacher[] = [
+  { id: '1', name: 'John Doe' },
+  { id: '2', name: 'Jane Smith' },
+  { id: '3', name: 'Alice Johnson' },
 ];
 
-const defaultSchedule: ClassSchedule = {
-  day: 'Monday',
-  startTime: '09:00',
-  endTime: '10:30',
+const initialScheduleItem: ClassSchedule = {
+  day: '',
+  startTime: '',
+  endTime: '',
   room: '',
 };
 
@@ -57,31 +42,24 @@ const classSchema = z.object({
   name: z.string().min(3, { message: 'Class name must be at least 3 characters' }),
   subject: z.string().min(2, { message: 'Subject is required' }),
   teacherId: z.string().min(1, { message: 'Teacher is required' }),
-  teacherName: z.string().min(1, { message: 'Teacher name is required' }),
-  studentCount: z.number().min(0),
+  teacherName: z.string(),
+  studentCount: z.number().min(0).default(0),
   schedule: z.array(
     z.object({
-      day: z.string(),
-      startTime: z.string(),
-      endTime: z.string(),
-      room: z.string().min(1, { message: 'Room number is required' }),
+      day: z.string().min(1, { message: 'Day is required' }),
+      startTime: z.string().min(1, { message: 'Start time is required' }),
+      endTime: z.string().min(1, { message: 'End time is required' }),
+      room: z.string().min(1, { message: 'Room is required' }),
     })
-  ).min(1, { message: 'At least one schedule entry is required' }),
+  ).min(1, { message: 'At least one schedule item is required' }),
 });
 
 type ClassFormValues = z.infer<typeof classSchema>;
 
-interface ClassFormDialogProps {
-  open: boolean;
-  onOpenChange: (open: boolean) => void;
-  onClassCreated?: (newClass: Class) => void;
-}
+const ClassFormDialog: React.FC<ClassFormDialogProps> = ({ open, onClose, onClassCreated }) => {
+  const { toast } = useToast();
+  const [scheduleItems, setScheduleItems] = React.useState<ClassSchedule[]>([initialScheduleItem]);
 
-export default function ClassFormDialog({
-  open,
-  onOpenChange,
-  onClassCreated,
-}: ClassFormDialogProps) {
   const form = useForm<ClassFormValues>({
     resolver: zodResolver(classSchema),
     defaultValues: {
@@ -90,36 +68,9 @@ export default function ClassFormDialog({
       teacherId: '',
       teacherName: '',
       studentCount: 0,
-      schedule: [{ ...defaultSchedule }],
+      schedule: [initialScheduleItem],
     },
   });
-
-  const { reset, formState } = form;
-
-  // Mock teacher data (would be fetched from API in a real app)
-  const teachers = [
-    { id: '2', name: 'John Smith' },
-    { id: '5', name: 'Sarah Johnson' },
-    { id: '6', name: 'Robert Chen' },
-    { id: '7', name: 'Maria Garcia' },
-    { id: '8', name: 'James Wilson' },
-    { id: '9', name: 'Emily Davis' },
-  ];
-
-  const handleAddSchedule = () => {
-    const currentSchedule = form.getValues('schedule') || [];
-    form.setValue('schedule', [...currentSchedule, { ...defaultSchedule }]);
-  };
-
-  const handleRemoveSchedule = (index: number) => {
-    const currentSchedule = form.getValues('schedule');
-    if (currentSchedule.length > 1) {
-      form.setValue(
-        'schedule',
-        currentSchedule.filter((_, i) => i !== index)
-      );
-    }
-  };
 
   const onSubmit = async (data: ClassFormValues) => {
     try {
@@ -130,7 +81,13 @@ export default function ClassFormDialog({
         teacherId: data.teacherId,
         teacherName: data.teacherName,
         studentCount: data.studentCount,
-        schedule: data.schedule,
+        // Ensure each schedule item has all required fields
+        schedule: data.schedule.map(item => ({
+          day: item.day,
+          startTime: item.startTime,
+          endTime: item.endTime,
+          room: item.room
+        })),
       };
       
       // Now pass the properly typed data to the API
@@ -139,15 +96,10 @@ export default function ClassFormDialog({
         title: 'Success',
         description: 'Class has been created successfully',
       });
-      
-      if (onClassCreated) {
-        onClassCreated(newClass);
-      }
-      
-      reset();
-      onOpenChange(false);
+      onClose();
+      onClassCreated && onClassCreated(newClass);
     } catch (error) {
-      console.error('Error creating class:', error);
+      console.error('Failed to create class:', error);
       toast({
         title: 'Error',
         description: 'Failed to create class. Please try again.',
@@ -156,229 +108,169 @@ export default function ClassFormDialog({
     }
   };
 
-  React.useEffect(() => {
-    if (!open) {
-      // Reset form when dialog closes
-      setTimeout(() => reset(), 100);
-    }
-  }, [open, reset]);
+  const addScheduleItem = () => {
+    setScheduleItems([...scheduleItems, initialScheduleItem]);
+    form.setValue('schedule', [...scheduleItems, initialScheduleItem]);
+  };
 
-  const handleTeacherChange = (teacherId: string) => {
-    const teacher = teachers.find(t => t.id === teacherId);
-    if (teacher) {
-      form.setValue('teacherName', teacher.name);
-    }
+  const removeScheduleItem = (index: number) => {
+    const newScheduleItems = [...scheduleItems];
+    newScheduleItems.splice(index, 1);
+    setScheduleItems(newScheduleItems);
+    form.setValue('schedule', newScheduleItems);
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto">
+    <Dialog open={open} onOpenChange={onClose}>
+      <DialogTrigger asChild>
+        <Button variant="outline">Create Class</Button>
+      </DialogTrigger>
+      <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
-          <DialogTitle>Add New Class</DialogTitle>
+          <DialogTitle>Create Class</DialogTitle>
         </DialogHeader>
-        
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="name"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Class Name</FormLabel>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Class Name</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter class name" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="subject"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Subject</FormLabel>
+                  <FormControl>
+                    <Input placeholder="Enter subject" {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="teacherId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Teacher</FormLabel>
+                  <Select onValueChange={(value) => {
+                    const selectedTeacher = teachers.find(teacher => teacher.id === value);
+                    form.setValue('teacherId', value);
+                    form.setValue('teacherName', selectedTeacher?.name || '');
+                  }}>
                     <FormControl>
-                      <Input placeholder="e.g. Mathematics 101" {...field} />
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select a teacher" />
+                      </SelectTrigger>
                     </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="subject"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Subject</FormLabel>
-                    <FormControl>
-                      <Input placeholder="e.g. Mathematics" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="teacherId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Teacher</FormLabel>
-                    <Select 
-                      onValueChange={(value) => {
-                        field.onChange(value);
-                        handleTeacherChange(value);
-                      }}
-                      value={field.value}
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select a teacher" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {teachers.map(teacher => (
-                          <SelectItem key={teacher.id} value={teacher.id}>
-                            {teacher.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="studentCount"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Capacity</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="number" 
-                        placeholder="Maximum number of students" 
-                        {...field}
-                        onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
-                      />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-            
-            <div className="space-y-4">
-              <div className="flex justify-between items-center">
-                <Label>Class Schedule</Label>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={handleAddSchedule}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add Schedule
-                </Button>
-              </div>
-              
-              {form.watch('schedule').map((_, index) => (
-                <div 
-                  key={index}
-                  className="border rounded-md p-4 space-y-3"
-                >
-                  <div className="flex justify-between items-center mb-2">
-                    <h4 className="text-sm font-medium">Session {index + 1}</h4>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => handleRemoveSchedule(index)}
-                      disabled={form.watch('schedule').length <= 1}
-                    >
-                      <Trash className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <FormField
-                      control={form.control}
-                      name={`schedule.${index}.day`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Day</FormLabel>
-                          <Select
-                            onValueChange={field.onChange}
-                            defaultValue={field.value}
-                          >
-                            <FormControl>
-                              <SelectTrigger>
-                                <SelectValue placeholder="Select a day" />
-                              </SelectTrigger>
-                            </FormControl>
+                    <SelectContent>
+                      {teachers.map((teacher) => (
+                        <SelectItem key={teacher.id} value={teacher.id}>
+                          {teacher.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            {scheduleItems.map((_, index) => (
+              <div key={index} className="space-y-2 border p-4 rounded-md">
+                <h4 className="text-sm font-medium">Schedule Item #{index + 1}</h4>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name={`schedule.${index}.day` as const}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Day</FormLabel>
+                        <FormControl>
+                          <Select onValueChange={field.onChange}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select a day" defaultValue={field.value} />
+                            </SelectTrigger>
                             <SelectContent>
-                              {weekdays.map(day => (
-                                <SelectItem key={day} value={day}>
-                                  {day}
-                                </SelectItem>
-                              ))}
+                              <SelectItem value="Monday">Monday</SelectItem>
+                              <SelectItem value="Tuesday">Tuesday</SelectItem>
+                              <SelectItem value="Wednesday">Wednesday</SelectItem>
+                              <SelectItem value="Thursday">Thursday</SelectItem>
+                              <SelectItem value="Friday">Friday</SelectItem>
                             </SelectContent>
                           </Select>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name={`schedule.${index}.room`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Room</FormLabel>
-                          <FormControl>
-                            <Input placeholder="e.g. A101" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name={`schedule.${index}.startTime`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Start Time</FormLabel>
-                          <FormControl>
-                            <Input type="time" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name={`schedule.${index}.endTime`}
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>End Time</FormLabel>
-                          <FormControl>
-                            <Input type="time" {...field} />
-                          </FormControl>
-                          <FormMessage />
-                        </FormItem>
-                      )}
-                    />
-                  </div>
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`schedule.${index}.room` as const}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Room</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Enter room number" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
                 </div>
-              ))}
-            </div>
-            
-            <DialogFooter>
-              <DialogClose asChild>
-                <Button type="button" variant="outline">
-                  Cancel
-                </Button>
-              </DialogClose>
-              <Button type="submit" disabled={formState.isSubmitting}>
-                {formState.isSubmitting ? "Creating..." : "Create Class"}
-              </Button>
-            </DialogFooter>
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={form.control}
+                    name={`schedule.${index}.startTime` as const}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Start Time</FormLabel>
+                        <FormControl>
+                          <Input type="time" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={form.control}
+                    name={`schedule.${index}.endTime` as const}
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>End Time</FormLabel>
+                        <FormControl>
+                          <Input type="time" {...field} />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                {scheduleItems.length > 1 && (
+                  <Button type="button" variant="destructive" size="sm" onClick={() => removeScheduleItem(index)}>
+                    Remove
+                  </Button>
+                )}
+              </div>
+            ))}
+            <Button type="button" variant="secondary" size="sm" onClick={addScheduleItem}>
+              Add Schedule Item
+            </Button>
+            <Button type="submit">Create Class</Button>
           </form>
         </Form>
       </DialogContent>
     </Dialog>
   );
-}
+};
+
+export default ClassFormDialog;
