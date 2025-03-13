@@ -237,8 +237,8 @@ const CLASSES: Class[] = [
 // Simulated API delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Update Base API URL to use HTTPS
-const API_BASE_URL = 'https://192.168.1.38:9090/api';
+// Base API URL
+const API_BASE_URL = 'http://192.168.1.38:9090/api';
 
 // API client
 class ApiClient {
