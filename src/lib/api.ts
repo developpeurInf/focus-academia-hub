@@ -386,7 +386,6 @@ class ApiClient {
     return newStudent;
   }
   
-  // Classes
   async getClasses(token: string | null, query?: string): Promise<Class[]> {
     if (token) {
       try {

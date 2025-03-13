@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
@@ -17,7 +16,7 @@ import {
 import { Skeleton } from '@/components/ui/skeleton';
 
 const Dashboard = () => {
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const [stats, setStats] = useState<DashboardStats | null>(null);
   const [activities, setActivities] = useState<ActivityItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -27,12 +26,12 @@ const Dashboard = () => {
       try {
         setIsLoading(true);
         if (user) {
-          // Fetch stats based on user role
-          const dashboardStats = await api.getDashboardStats(user.role);
+          // Pass both accessToken and user.role to getDashboardStats
+          const dashboardStats = await api.getDashboardStats(accessToken, user.role);
           setStats(dashboardStats);
           
-          // Fetch recent activity
-          const recentActivity = await api.getRecentActivity(5);
+          // Pass accessToken and limit (as number) to getRecentActivity
+          const recentActivity = await api.getRecentActivity(accessToken, 5);
           setActivities(recentActivity);
         }
       } catch (error) {
@@ -43,7 +42,7 @@ const Dashboard = () => {
     };
 
     fetchDashboardData();
-  }, [user]);
+  }, [user, accessToken]);
 
   // Get greeting based on time of day
   const getGreeting = () => {

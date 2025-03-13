@@ -38,7 +38,7 @@ import ClassFilters, { ClassFilters as ClassFiltersType } from '@/components/cla
 import { toast } from '@/hooks/use-toast';
 
 const Classes = () => {
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const [classes, setClasses] = useState<Class[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -55,7 +55,8 @@ const Classes = () => {
   const fetchClasses = async () => {
     try {
       setIsLoading(true);
-      const data = await api.getClasses();
+      // Pass the accessToken to the getClasses method
+      const data = await api.getClasses(accessToken);
       setClasses(data);
       setFilteredClasses(data);
     } catch (error) {
