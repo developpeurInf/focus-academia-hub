@@ -46,8 +46,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       setIsLoading(true);
       
-      // Use fetch directly to connect to your backend server
-      const response = await fetch('http://192.168.1.38:9090/api/auth/login', {
+      // Update the URL to use HTTPS instead of HTTP
+      const response = await fetch('https://192.168.1.38:9090/api/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
