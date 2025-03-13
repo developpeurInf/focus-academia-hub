@@ -23,7 +23,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
-import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
@@ -31,7 +30,7 @@ import { toast } from 'sonner';
 const API_BASE_URL = 'http://192.168.1.38:9090/api';
 
 const Students = () => {
-  const { user } = useAuth();
+  const { user, accessToken } = useAuth();
   const [students, setStudents] = useState<Student[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -41,7 +40,20 @@ const Students = () => {
     const fetchStudents = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch(`${API_BASE_URL}/students`);
+        
+        // Use access token from AuthContext
+        const headers: HeadersInit = {
+          'Content-Type': 'application/json'
+        };
+
+        // Add authorization header if we have an access token
+        if (accessToken) {
+          headers['Authorization'] = `Bearer ${accessToken}`;
+        }
+        
+        const response = await fetch(`${API_BASE_URL}/students`, {
+          headers
+        });
         
         if (!response.ok) {
           throw new Error(`Error: ${response.status}`);
@@ -58,8 +70,16 @@ const Students = () => {
       }
     };
 
-    fetchStudents();
-  }, []);
+    // Only fetch students if we have an access token
+    if (accessToken) {
+      fetchStudents();
+    } else {
+      // If no access token is available, set empty students list
+      setStudents([]);
+      setFilteredStudents([]);
+      setIsLoading(false);
+    }
+  }, [accessToken]);
 
   useEffect(() => {
     if (searchQuery.trim() === '') {
@@ -143,7 +163,7 @@ const Students = () => {
               ) : filteredStudents.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-8 text-center text-gray-500">
-                    No students found. Try a different search term.
+                    {accessToken ? "No students found. Try a different search term." : "Please log in to view students."}
                   </td>
                 </tr>
               ) : (

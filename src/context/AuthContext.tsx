@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 interface AuthContextType {
   user: User | null;
   isLoading: boolean;
+  accessToken: string | null;
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
   updateUserRole: (role: UserRole) => void;
@@ -16,12 +17,15 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
+  const [accessToken, setAccessToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const { toast } = useToast();
 
   useEffect(() => {
-    // Check for stored user in localStorage
+    // Check for stored user and token in localStorage
     const storedUser = localStorage.getItem('focus_user');
+    const storedToken = localStorage.getItem('focus_token');
+    
     if (storedUser) {
       try {
         setUser(JSON.parse(storedUser));
@@ -30,18 +34,28 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         localStorage.removeItem('focus_user');
       }
     }
+    
+    if (storedToken) {
+      setAccessToken(storedToken);
+    }
+    
     setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
     try {
       setIsLoading(true);
-      const loggedInUser = await api.login(email, password);
-      setUser(loggedInUser);
-      localStorage.setItem('focus_user', JSON.stringify(loggedInUser));
+      const response = await api.login(email, password);
+      setUser(response.user);
+      setAccessToken(response.access_token);
+      
+      // Store in localStorage
+      localStorage.setItem('focus_user', JSON.stringify(response.user));
+      localStorage.setItem('focus_token', response.access_token);
+      
       toast({
         title: "Login successful",
-        description: `Welcome back, ${loggedInUser.name}!`,
+        description: `Welcome back, ${response.user.name}!`,
       });
     } catch (error) {
       console.error('Login error:', error);
@@ -58,7 +72,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const logout = () => {
     setUser(null);
+    setAccessToken(null);
     localStorage.removeItem('focus_user');
+    localStorage.removeItem('focus_token');
     toast({
       title: "Logged out",
       description: "You have been successfully logged out",
@@ -74,7 +90,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, isLoading, login, logout, updateUserRole }}>
+    <AuthContext.Provider value={{ user, accessToken, isLoading, login, logout, updateUserRole }}>
       {children}
     </AuthContext.Provider>
   );

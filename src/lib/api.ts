@@ -240,13 +240,20 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 // API client
 class ApiClient {
   // Authentication
-  async login(email: string, password: string): Promise<User> {
+  async login(email: string, password: string): Promise<{ user: User; access_token: string }> {
     await delay(800);
     const user = USERS.find(u => u.email === email);
     if (!user) {
       throw new Error("Invalid credentials");
     }
-    return user;
+    
+    // Generate a mock access token
+    const access_token = `mock_token_${Math.random().toString(36).substring(2)}`;
+    
+    return { 
+      user,
+      access_token
+    };
   }
   
   // Dashboard
