@@ -1,7 +1,5 @@
-
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
-import { api } from '@/lib/api';
 import { Student } from '@/lib/types';
 import DashboardHeader from '@/components/dashboard/DashboardHeader';
 import { 
@@ -28,6 +26,9 @@ import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
+import { toast } from 'sonner';
+
+const API_BASE_URL = 'http://192.168.1.38:9090/api';
 
 const Students = () => {
   const { user } = useAuth();
@@ -40,11 +41,18 @@ const Students = () => {
     const fetchStudents = async () => {
       try {
         setIsLoading(true);
-        const data = await api.getStudents();
+        const response = await fetch(`${API_BASE_URL}/students`);
+        
+        if (!response.ok) {
+          throw new Error(`Error: ${response.status}`);
+        }
+        
+        const data = await response.json();
         setStudents(data);
         setFilteredStudents(data);
       } catch (error) {
         console.error('Error fetching students:', error);
+        toast.error('Failed to load students. Please try again.');
       } finally {
         setIsLoading(false);
       }
