@@ -10,12 +10,13 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useToast } from '@/components/ui/use-toast';
-import * as api from '@/lib/api';
+import { api } from '@/lib/api';
 import { Class, ClassSchedule } from '@/lib/types';
 
 interface ClassFormDialogProps {
   open: boolean;
   onClose: () => void;
+  onOpenChange: (open: boolean) => void;
   onClassCreated?: (newClass: Class) => void;
 }
 
@@ -56,7 +57,7 @@ const classSchema = z.object({
 
 type ClassFormValues = z.infer<typeof classSchema>;
 
-const ClassFormDialog: React.FC<ClassFormDialogProps> = ({ open, onClose, onClassCreated }) => {
+const ClassFormDialog: React.FC<ClassFormDialogProps> = ({ open, onClose, onOpenChange, onClassCreated }) => {
   const { toast } = useToast();
   const [scheduleItems, setScheduleItems] = React.useState<ClassSchedule[]>([initialScheduleItem]);
 
@@ -121,10 +122,7 @@ const ClassFormDialog: React.FC<ClassFormDialogProps> = ({ open, onClose, onClas
   };
 
   return (
-    <Dialog open={open} onOpenChange={onClose}>
-      <DialogTrigger asChild>
-        <Button variant="outline">Create Class</Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <DialogHeader>
           <DialogTitle>Create Class</DialogTitle>

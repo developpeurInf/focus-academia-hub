@@ -344,6 +344,7 @@ const Classes = () => {
       {/* Add Class Dialog */}
       <ClassFormDialog 
         open={isAddClassOpen} 
+        onClose={() => setIsAddClassOpen(false)}
         onOpenChange={setIsAddClassOpen}
         onClassCreated={handleClassCreated}
       />
