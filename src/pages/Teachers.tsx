@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Teacher } from '@/lib/types';
@@ -114,21 +113,10 @@ const Teachers = () => {
     if (!selectedTeacher) return;
     
     try {
-      // In a real app, call an API to delete the teacher
-      // For now, just filter out the teacher from the list
-      setTeachers(prevTeachers => 
-        prevTeachers.filter(t => t.id !== selectedTeacher.id)
-      );
-      
-      toast.success('Teacher removed', {
-        description: `${selectedTeacher.name} has been removed from the system.`
-      });
-      
-      setIsDeleteTeacherOpen(false);
-      setSelectedTeacher(null);
+      // Refresh the teacher list after successful deletion
+      handleTeacherAdded();
     } catch (error) {
-      console.error('Error removing teacher:', error);
-      toast.error('Failed to remove teacher');
+      console.error('Error refreshing teachers list after removal:', error);
     }
   };
 
@@ -389,6 +377,7 @@ const Teachers = () => {
             setSelectedTeacher(null);
           }}
           onConfirm={handleRemoveTeacher}
+          teacherId={selectedTeacher.id}
           teacherName={selectedTeacher.name}
         />
       )}

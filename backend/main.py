@@ -1,3 +1,4 @@
+
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -7,14 +8,14 @@ from datetime import datetime, timedelta
 from models import (
     User, UserCreate, UserLogin, UserRole,
     Student, StudentCreate, 
-    Teacher, TeacherCreate,
+    Teacher, TeacherCreate, TeacherUpdate,
     Class, ClassCreate, ClassUpdate,
     Attendance, Grade, Payment, Notification, Message,
     ActivityItem, DashboardStats
 )
 from database import (
     get_users, get_students, get_teachers, get_classes, get_activities,
-    add_student, add_teacher, add_class, update_class, delete_class, get_dashboard_stats,
+    add_student, add_teacher, update_teacher, delete_teacher, add_class, update_class, delete_class, get_dashboard_stats,
     get_user_by_email, authenticate_user
 )
 from auth import create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
@@ -117,6 +118,33 @@ async def create_teacher(
     if current_user.role not in ["admin"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     return add_teacher(teacher)
+
+@app.put("/api/teachers/{teacher_id}", response_model=Teacher)
+async def update_teacher_endpoint(
+    teacher_id: str,
+    teacher_data: TeacherUpdate,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    updated_teacher = update_teacher(teacher_id, teacher_data)
+    if not updated_teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+    return updated_teacher
+
+@app.delete("/api/teachers/{teacher_id}", response_model=dict)
+async def delete_teacher_endpoint(
+    teacher_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    success = delete_teacher(teacher_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+    return {"success": True}
 
 # Classes endpoints
 @app.get("/api/classes", response_model=List[Class])

@@ -5,7 +5,7 @@ from datetime import datetime
 from models import (
     User, UserCreate, UserRole, 
     Student, StudentCreate,
-    Teacher, TeacherCreate,
+    Teacher, TeacherCreate, TeacherUpdate,
     Class, ClassCreate, ClassUpdate,
     ActivityItem, DashboardStats
 )
@@ -339,10 +339,6 @@ def get_students(query: Optional[str] = None) -> List[Student]:
            query in student.grade.lower()
     ]
 
-def get_teachers() -> List[Teacher]:
-    # Mock data, would be from database in a real app
-    return []
-
 def get_classes(query: Optional[str] = None) -> List[Class]:
     if not query:
         return CLASSES.copy()
@@ -424,4 +420,73 @@ def add_teacher(teacher_data: TeacherCreate) -> Teacher:
         **teacher_data.model_dump()
     )
     TEACHERS.append(new_teacher)
+    
+    # Create activity log for new teacher addition
+    activity_id = str(uuid.uuid4())[:8]
+    new_activity = ActivityItem(
+        id=activity_id,
+        userId="1",  # Admin user
+        userName="Admin User",
+        userAvatar="/placeholder.svg",
+        action="added new teacher",
+        target=new_teacher.name,
+        date=datetime.now().isoformat(),
+        type="system"
+    )
+    ACTIVITIES.insert(0, new_activity)
+    
     return new_teacher
+
+def update_teacher(teacher_id: str, teacher_data: TeacherUpdate) -> Optional[Teacher]:
+    for i, teacher in enumerate(TEACHERS):
+        if teacher.id == teacher_id:
+            # Update only provided fields
+            update_data = {k: v for k, v in teacher_data.model_dump().items() if v is not None}
+            updated_teacher = Teacher(**{**teacher.model_dump(), **update_data})
+            TEACHERS[i] = updated_teacher
+            
+            # Create activity log for teacher update
+            activity_id = str(uuid.uuid4())[:8]
+            new_activity = ActivityItem(
+                id=activity_id,
+                userId="1",  # Admin user
+                userName="Admin User",
+                userAvatar="/placeholder.svg",
+                action="updated teacher",
+                target=updated_teacher.name,
+                date=datetime.now().isoformat(),
+                type="system"
+            )
+            ACTIVITIES.insert(0, new_activity)
+            
+            return updated_teacher
+    return None
+
+def delete_teacher(teacher_id: str) -> bool:
+    global TEACHERS
+    # Find the teacher first to get their name for the activity log
+    teacher = next((t for t in TEACHERS if t.id == teacher_id), None)
+    if not teacher:
+        return False
+    
+    teacher_name = teacher.name
+    original_length = len(TEACHERS)
+    TEACHERS = [t for t in TEACHERS if t.id != teacher_id]
+    
+    if len(TEACHERS) < original_length:
+        # Create activity log for teacher deletion
+        activity_id = str(uuid.uuid4())[:8]
+        new_activity = ActivityItem(
+            id=activity_id,
+            userId="1",  # Admin user
+            userName="Admin User",
+            userAvatar="/placeholder.svg",
+            action="removed teacher",
+            target=teacher_name,
+            date=datetime.now().isoformat(),
+            type="system"
+        )
+        ACTIVITIES.insert(0, new_activity)
+        return True
+    
+    return False

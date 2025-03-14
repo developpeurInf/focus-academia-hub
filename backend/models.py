@@ -1,3 +1,4 @@
+
 from pydantic import BaseModel, EmailStr, Field
 from typing import List, Optional, Union, Literal
 from datetime import datetime
@@ -70,6 +71,16 @@ class TeacherCreate(TeacherBase):
     phoneNumber: Optional[str] = None
     department: Optional[str] = None
     qualification: Optional[str] = None
+
+class TeacherUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    subject: Optional[str] = None
+    joinDate: Optional[str] = None
+    phoneNumber: Optional[str] = None
+    department: Optional[str] = None
+    qualification: Optional[str] = None
+    avatar: Optional[str] = None
 
 class Teacher(TeacherBase):
     id: str

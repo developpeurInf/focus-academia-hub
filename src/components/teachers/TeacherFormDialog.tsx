@@ -75,8 +75,17 @@ const TeacherFormDialog: React.FC<TeacherFormDialogProps> = ({
       setIsSubmitting(true);
       
       if (isEditing && teacher) {
-        // TODO: Implement update teacher API
-        // For now, we'll just show a success message
+        // Update existing teacher
+        await api.updateTeacher(teacher.id, {
+          name: data.name,
+          email: data.email,
+          subject: data.subject,
+          joinDate: data.joinDate,
+          phoneNumber: data.phoneNumber,
+          department: data.department,
+          qualification: data.qualification,
+        });
+        
         toast.success('Teacher updated successfully', {
           description: `${data.name}'s information has been updated.`,
         });
