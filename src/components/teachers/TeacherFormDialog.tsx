@@ -82,10 +82,16 @@ const TeacherFormDialog: React.FC<TeacherFormDialogProps> = ({
         });
       } else {
         // Create a new teacher
+        // Make sure all required properties are passed as non-optional
         await api.createTeacher({
-          ...data,
+          name: data.name,           // Required field
+          email: data.email,         // Required field
+          subject: data.subject,     // Required field
+          joinDate: data.joinDate,   // Required field
           avatar: '/placeholder.svg', // Default avatar
-          joinDate: data.joinDate,
+          phoneNumber: data.phoneNumber,
+          department: data.department,
+          qualification: data.qualification,
         });
         
         toast.success('Teacher added successfully', {
