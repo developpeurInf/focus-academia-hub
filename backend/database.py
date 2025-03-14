@@ -1,4 +1,3 @@
-
 from typing import List, Optional, Dict, Any
 import random
 import uuid
@@ -246,6 +245,65 @@ ACTIVITIES = [
     ),
 ]
 
+# Add mock teachers
+TEACHERS = [
+    Teacher(
+        id="1", 
+        name="John Smith", 
+        email="john@focus.edu", 
+        subject="Mathematics", 
+        joinDate="2020-08-15", 
+        avatar="/placeholder.svg",
+        phoneNumber="(555) 123-4567",
+        department="Science",
+        qualification="Ph.D. in Mathematics"
+    ),
+    Teacher(
+        id="2", 
+        name="Sarah Johnson", 
+        email="sarah@focus.edu", 
+        subject="English", 
+        joinDate="2019-07-10", 
+        avatar="/placeholder.svg",
+        phoneNumber="(555) 234-5678",
+        department="Humanities",
+        qualification="M.A. in English Literature"
+    ),
+    Teacher(
+        id="3", 
+        name="Robert Chen", 
+        email="robert.chen@focus.edu", 
+        subject="Physics", 
+        joinDate="2021-01-05", 
+        avatar="/placeholder.svg",
+        phoneNumber="(555) 345-6789",
+        department="Science",
+        qualification="Ph.D. in Physics"
+    ),
+    Teacher(
+        id="4", 
+        name="Maria Garcia", 
+        email="maria@focus.edu", 
+        subject="Biology", 
+        joinDate="2018-09-01", 
+        avatar="/placeholder.svg",
+        phoneNumber="(555) 456-7890",
+        department="Science",
+        qualification="M.S. in Biology"
+    ),
+    Teacher(
+        id="5", 
+        name="James Wilson", 
+        email="james@focus.edu", 
+        subject="History", 
+        joinDate="2020-02-15", 
+        avatar="/placeholder.svg",
+        phoneNumber="(555) 567-8901",
+        department="Humanities",
+        qualification="Ph.D. in History"
+    ),
+]
+
 # Database access functions
 def get_users() -> List[User]:
     return USERS.copy()
@@ -311,6 +369,20 @@ def get_dashboard_stats(role: UserRole) -> DashboardStats:
         upcomingEvents=12
     )
 
+def get_teachers(query: Optional[str] = None) -> List[Teacher]:
+    if not query:
+        return TEACHERS.copy()
+    
+    query = query.lower()
+    return [
+        teacher for teacher in TEACHERS
+        if query in teacher.name.lower() or 
+           query in teacher.email.lower() or 
+           query in teacher.subject.lower() or
+           (teacher.department and query in teacher.department.lower()) or
+           (teacher.qualification and query in teacher.qualification.lower())
+    ]
+
 def add_student(student_data: StudentCreate) -> Student:
     student_id = str(uuid.uuid4())[:8]
     new_student = Student(
@@ -344,3 +416,12 @@ def delete_class(class_id: str) -> bool:
     original_length = len(CLASSES)
     CLASSES = [cls for cls in CLASSES if cls.id != class_id]
     return len(CLASSES) < original_length
+
+def add_teacher(teacher_data: TeacherCreate) -> Teacher:
+    teacher_id = str(uuid.uuid4())[:8]
+    new_teacher = Teacher(
+        id=teacher_id,
+        **teacher_data.model_dump()
+    )
+    TEACHERS.append(new_teacher)
+    return new_teacher

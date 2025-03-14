@@ -1,4 +1,3 @@
-
 from fastapi import FastAPI, Depends, HTTPException, status
 from fastapi.middleware.cors import CORSMiddleware
 import uvicorn
@@ -15,7 +14,7 @@ from models import (
 )
 from database import (
     get_users, get_students, get_teachers, get_classes, get_activities,
-    add_student, add_class, update_class, delete_class, get_dashboard_stats,
+    add_student, add_teacher, add_class, update_class, delete_class, get_dashboard_stats,
     get_user_by_email, authenticate_user
 )
 from auth import create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES
@@ -91,6 +90,33 @@ async def create_student(
     if current_user.role not in ["admin", "teacher"]:
         raise HTTPException(status_code=403, detail="Not authorized")
     return add_student(student)
+
+# Teachers endpoints
+@app.get("/api/teachers", response_model=List[Teacher])
+async def list_teachers(
+    query: Optional[str] = None,
+    current_user: User = Depends(get_current_user)
+):
+    return get_teachers(query)
+
+@app.get("/api/teachers/{teacher_id}", response_model=Teacher)
+async def get_teacher(
+    teacher_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    teacher = next((t for t in get_teachers() if t.id == teacher_id), None)
+    if not teacher:
+        raise HTTPException(status_code=404, detail="Teacher not found")
+    return teacher
+
+@app.post("/api/teachers", response_model=Teacher)
+async def create_teacher(
+    teacher: TeacherCreate,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    return add_teacher(teacher)
 
 # Classes endpoints
 @app.get("/api/classes", response_model=List[Class])

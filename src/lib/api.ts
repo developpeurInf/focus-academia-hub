@@ -234,6 +234,65 @@ const CLASSES: Class[] = [
   },
 ];
 
+// Add mock teachers data
+const TEACHERS: Teacher[] = [
+  { 
+    id: "1", 
+    name: "John Smith", 
+    email: "john@focus.edu", 
+    subject: "Mathematics", 
+    joinDate: "2020-08-15", 
+    avatar: "/placeholder.svg",
+    phoneNumber: "(555) 123-4567",
+    department: "Science",
+    qualification: "Ph.D. in Mathematics"
+  },
+  { 
+    id: "2", 
+    name: "Sarah Johnson", 
+    email: "sarah@focus.edu", 
+    subject: "English", 
+    joinDate: "2019-07-10", 
+    avatar: "/placeholder.svg",
+    phoneNumber: "(555) 234-5678",
+    department: "Humanities",
+    qualification: "M.A. in English Literature"
+  },
+  { 
+    id: "3", 
+    name: "Robert Chen", 
+    email: "robert.chen@focus.edu", 
+    subject: "Physics", 
+    joinDate: "2021-01-05", 
+    avatar: "/placeholder.svg",
+    phoneNumber: "(555) 345-6789",
+    department: "Science",
+    qualification: "Ph.D. in Physics"
+  },
+  { 
+    id: "4", 
+    name: "Maria Garcia", 
+    email: "maria@focus.edu", 
+    subject: "Biology", 
+    joinDate: "2018-09-01", 
+    avatar: "/placeholder.svg",
+    phoneNumber: "(555) 456-7890",
+    department: "Science",
+    qualification: "M.S. in Biology"
+  },
+  { 
+    id: "5", 
+    name: "James Wilson", 
+    email: "james@focus.edu", 
+    subject: "History", 
+    joinDate: "2020-02-15", 
+    avatar: "/placeholder.svg",
+    phoneNumber: "(555) 567-8901",
+    department: "Humanities",
+    qualification: "Ph.D. in History"
+  },
+];
+
 // Simulated API delay
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -384,6 +443,75 @@ class ApiClient {
       id: Math.random().toString(36).substr(2, 9)
     };
     return newStudent;
+  }
+  
+  // Teachers
+  async getTeachers(token: string | null, query?: string): Promise<Teacher[]> {
+    if (token) {
+      try {
+        const url = query 
+          ? `${API_BASE_URL}/teachers?query=${encodeURIComponent(query)}`
+          : `${API_BASE_URL}/teachers`;
+          
+        const response = await fetch(url, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch teachers');
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Failed to fetch teachers:', error);
+        // Fallback to mock data with filtering
+        let teachers = [...TEACHERS];
+        if (query) {
+          const lowercasedQuery = query.toLowerCase();
+          teachers = teachers.filter(teacher => 
+            teacher.name.toLowerCase().includes(lowercasedQuery) || 
+            teacher.email.toLowerCase().includes(lowercasedQuery) ||
+            teacher.subject.toLowerCase().includes(lowercasedQuery) ||
+            teacher.department?.toLowerCase().includes(lowercasedQuery) ||
+            teacher.qualification?.toLowerCase().includes(lowercasedQuery)
+          );
+        }
+        return teachers;
+      }
+    }
+    
+    // Fallback for demo/development
+    await delay(700);
+    let teachers = [...TEACHERS];
+    
+    if (query) {
+      const lowercasedQuery = query.toLowerCase();
+      teachers = teachers.filter(teacher => 
+        teacher.name.toLowerCase().includes(lowercasedQuery) || 
+        teacher.email.toLowerCase().includes(lowercasedQuery) ||
+        teacher.subject.toLowerCase().includes(lowercasedQuery) ||
+        (teacher.department && teacher.department.toLowerCase().includes(lowercasedQuery)) ||
+        (teacher.qualification && teacher.qualification.toLowerCase().includes(lowercasedQuery))
+      );
+    }
+    
+    return teachers;
+  }
+  
+  async getTeacherById(id: string): Promise<Teacher | null> {
+    await delay(500);
+    return TEACHERS.find(t => t.id === id) || null;
+  }
+  
+  async createTeacher(teacher: Omit<Teacher, "id">): Promise<Teacher> {
+    await delay(800);
+    const newTeacher = {
+      ...teacher,
+      id: Math.random().toString(36).substr(2, 9)
+    };
+    return newTeacher;
   }
   
   async getClasses(token: string | null, query?: string): Promise<Class[]> {
