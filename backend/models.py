@@ -1,12 +1,11 @@
-
 from pydantic import BaseModel, EmailStr, Field
 from typing import List, Optional, Union, Literal
 from datetime import datetime
 import uuid
 
 # Base Models
-class UserRole(str, Literal["admin", "teacher", "student", "parent"]):
-    pass
+# Changed from class to type alias to avoid metaclass conflict
+UserRole = Literal["admin", "teacher", "student", "parent"]
 
 class ClassSchedule(BaseModel):
     day: str
