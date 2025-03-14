@@ -29,12 +29,28 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
 
+// Import the dialog components
+import TeacherFormDialog from '@/components/teachers/TeacherFormDialog';
+import TeacherProfileDialog from '@/components/teachers/TeacherProfileDialog';
+import TeacherScheduleDialog from '@/components/teachers/TeacherScheduleDialog';
+import TeacherClassesDialog from '@/components/teachers/TeacherClassesDialog';
+import DeleteTeacherDialog from '@/components/teachers/DeleteTeacherDialog';
+
 const Teachers = () => {
   const { user, accessToken } = useAuth();
   const [teachers, setTeachers] = useState<Teacher[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredTeachers, setFilteredTeachers] = useState<Teacher[]>([]);
+  
+  // State for managing dialogs
+  const [isAddTeacherOpen, setIsAddTeacherOpen] = useState(false);
+  const [isEditTeacherOpen, setIsEditTeacherOpen] = useState(false);
+  const [isViewProfileOpen, setIsViewProfileOpen] = useState(false);
+  const [isViewScheduleOpen, setIsViewScheduleOpen] = useState(false);
+  const [isViewClassesOpen, setIsViewClassesOpen] = useState(false);
+  const [isDeleteTeacherOpen, setIsDeleteTeacherOpen] = useState(false);
+  const [selectedTeacher, setSelectedTeacher] = useState<Teacher | null>(null);
 
   useEffect(() => {
     const fetchTeachers = async () => {
@@ -93,6 +109,43 @@ const Teachers = () => {
     return new Date(dateString).toLocaleDateString(undefined, options);
   };
 
+  // Handle removing a teacher
+  const handleRemoveTeacher = async () => {
+    if (!selectedTeacher) return;
+    
+    try {
+      // In a real app, call an API to delete the teacher
+      // For now, just filter out the teacher from the list
+      setTeachers(prevTeachers => 
+        prevTeachers.filter(t => t.id !== selectedTeacher.id)
+      );
+      
+      toast.success('Teacher removed', {
+        description: `${selectedTeacher.name} has been removed from the system.`
+      });
+      
+      setIsDeleteTeacherOpen(false);
+      setSelectedTeacher(null);
+    } catch (error) {
+      console.error('Error removing teacher:', error);
+      toast.error('Failed to remove teacher');
+    }
+  };
+
+  // Handle refreshing the teacher list after adding a new teacher
+  const handleTeacherAdded = async () => {
+    try {
+      setIsLoading(true);
+      const data = await api.getTeachers(accessToken);
+      setTeachers(data);
+      setFilteredTeachers(data);
+    } catch (error) {
+      console.error('Error refreshing teachers:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div>
       <DashboardHeader
@@ -113,7 +166,10 @@ const Teachers = () => {
             <Button variant="outline" size="icon">
               <Filter className="h-4 w-4" />
             </Button>
-            <Button className="flex-1 sm:flex-none">
+            <Button 
+              className="flex-1 sm:flex-none"
+              onClick={() => setIsAddTeacherOpen(true)}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Teacher
             </Button>
@@ -209,12 +265,38 @@ const Teachers = () => {
                         <DropdownMenuContent align="end" className="w-56">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem>View Profile</DropdownMenuItem>
-                          <DropdownMenuItem>Edit Details</DropdownMenuItem>
-                          <DropdownMenuItem>View Schedule</DropdownMenuItem>
-                          <DropdownMenuItem>Assigned Classes</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedTeacher(teacher);
+                            setIsViewProfileOpen(true);
+                          }}>
+                            View Profile
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedTeacher(teacher);
+                            setIsEditTeacherOpen(true);
+                          }}>
+                            Edit Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedTeacher(teacher);
+                            setIsViewScheduleOpen(true);
+                          }}>
+                            View Schedule
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedTeacher(teacher);
+                            setIsViewClassesOpen(true);
+                          }}>
+                            Assigned Classes
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-500 focus:text-red-500">
+                          <DropdownMenuItem 
+                            className="text-red-500 focus:text-red-500"
+                            onClick={() => {
+                              setSelectedTeacher(teacher);
+                              setIsDeleteTeacherOpen(true);
+                            }}
+                          >
                             Remove Teacher
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -241,6 +323,75 @@ const Teachers = () => {
           </div>
         </div>
       </div>
+
+      {/* Add Teacher Dialog */}
+      <TeacherFormDialog 
+        isOpen={isAddTeacherOpen}
+        onClose={() => setIsAddTeacherOpen(false)}
+        onSuccess={handleTeacherAdded}
+      />
+
+      {/* Edit Teacher Dialog */}
+      {selectedTeacher && (
+        <TeacherFormDialog 
+          isOpen={isEditTeacherOpen}
+          onClose={() => {
+            setIsEditTeacherOpen(false);
+            setSelectedTeacher(null);
+          }}
+          teacher={selectedTeacher}
+          onSuccess={handleTeacherAdded}
+        />
+      )}
+
+      {/* View Profile Dialog */}
+      {selectedTeacher && (
+        <TeacherProfileDialog 
+          isOpen={isViewProfileOpen}
+          onClose={() => {
+            setIsViewProfileOpen(false);
+            setSelectedTeacher(null);
+          }}
+          teacher={selectedTeacher}
+        />
+      )}
+
+      {/* View Schedule Dialog */}
+      {selectedTeacher && (
+        <TeacherScheduleDialog 
+          isOpen={isViewScheduleOpen}
+          onClose={() => {
+            setIsViewScheduleOpen(false);
+            setSelectedTeacher(null);
+          }}
+          teacher={selectedTeacher}
+        />
+      )}
+
+      {/* View Classes Dialog */}
+      {selectedTeacher && (
+        <TeacherClassesDialog 
+          isOpen={isViewClassesOpen}
+          onClose={() => {
+            setIsViewClassesOpen(false);
+            setSelectedTeacher(null);
+          }}
+          teacher={selectedTeacher}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {selectedTeacher && (
+        <DeleteTeacherDialog 
+          isOpen={isDeleteTeacherOpen}
+          onClose={() => {
+            setIsDeleteTeacherOpen(false);
+            setSelectedTeacher(null);
+          }}
+          onConfirm={handleRemoveTeacher}
+          teacherName={selectedTeacher.name}
+        />
+      )}
     </div>
   );
 };
