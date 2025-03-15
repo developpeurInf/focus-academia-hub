@@ -490,3 +490,66 @@ def delete_teacher(teacher_id: str) -> bool:
         return True
     
     return False
+
+def update_student(student_id: str, student_data: StudentCreate) -> Optional[Student]:
+    for i, student in enumerate(STUDENTS):
+        if student.id == student_id:
+            # Update only provided fields, preserving existing data where needed
+            update_data = {k: v for k, v in student_data.model_dump().items() if v is not None}
+            
+            # Preserve averageGrade and attendance if not in the update data
+            if 'averageGrade' not in update_data:
+                update_data['averageGrade'] = student.averageGrade
+            if 'attendance' not in update_data:
+                update_data['attendance'] = student.attendance
+            if 'avatar' not in update_data:
+                update_data['avatar'] = student.avatar
+                
+            updated_student = Student(id=student_id, **update_data)
+            STUDENTS[i] = updated_student
+            
+            # Create activity log for student update
+            activity_id = str(uuid.uuid4())[:8]
+            new_activity = ActivityItem(
+                id=activity_id,
+                userId="1",  # Admin user
+                userName="Admin User",
+                userAvatar="/placeholder.svg",
+                action="updated student",
+                target=updated_student.name,
+                date=datetime.now().isoformat(),
+                type="system"
+            )
+            ACTIVITIES.insert(0, new_activity)
+            
+            return updated_student
+    return None
+
+def delete_student(student_id: str) -> bool:
+    global STUDENTS
+    # Find the student first to get their name for the activity log
+    student = next((s for s in STUDENTS if s.id == student_id), None)
+    if not student:
+        return False
+    
+    student_name = student.name
+    original_length = len(STUDENTS)
+    STUDENTS = [s for s in STUDENTS if s.id != student_id]
+    
+    if len(STUDENTS) < original_length:
+        # Create activity log for student deletion
+        activity_id = str(uuid.uuid4())[:8]
+        new_activity = ActivityItem(
+            id=activity_id,
+            userId="1",  # Admin user
+            userName="Admin User",
+            userAvatar="/placeholder.svg",
+            action="removed student",
+            target=student_name,
+            date=datetime.now().isoformat(),
+            type="system"
+        )
+        ACTIVITIES.insert(0, new_activity)
+        return True
+    
+    return False

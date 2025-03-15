@@ -14,20 +14,20 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 
-type DeleteTeacherDialogProps = {
+type DeleteStudentDialogProps = {
   isOpen: boolean;
   onClose: () => void;
   onConfirm: () => void;
-  teacherId: string;
-  teacherName: string;
+  studentId: string;
+  studentName: string;
 };
 
-const DeleteTeacherDialog: React.FC<DeleteTeacherDialogProps> = ({
+const DeleteStudentDialog: React.FC<DeleteStudentDialogProps> = ({
   isOpen,
   onClose,
   onConfirm,
-  teacherId,
-  teacherName,
+  studentId,
+  studentName,
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
   const { accessToken } = useAuth();
@@ -35,14 +35,14 @@ const DeleteTeacherDialog: React.FC<DeleteTeacherDialogProps> = ({
   const handleDelete = async () => {
     try {
       setIsDeleting(true);
-      await api.deleteTeacher(teacherId, accessToken);
-      toast.success('Teacher removed', {
-        description: `${teacherName} has been removed from the system.`
+      await api.deleteStudent(studentId, accessToken);
+      toast.success('Student removed', {
+        description: `${studentName} has been removed from the system.`
       });
       onConfirm();
     } catch (error) {
-      console.error('Error removing teacher:', error);
-      toast.error('Failed to remove teacher', {
+      console.error('Error removing student:', error);
+      toast.error('Failed to remove student', {
         description: 'Please try again or contact support if the issue persists.'
       });
     } finally {
@@ -55,9 +55,9 @@ const DeleteTeacherDialog: React.FC<DeleteTeacherDialogProps> = ({
     <AlertDialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <AlertDialogContent>
         <AlertDialogHeader>
-          <AlertDialogTitle>Remove Teacher</AlertDialogTitle>
+          <AlertDialogTitle>Remove Student</AlertDialogTitle>
           <AlertDialogDescription>
-            Are you sure you want to remove {teacherName} from the system? This action cannot be undone.
+            Are you sure you want to remove {studentName} from the system? This action cannot be undone.
           </AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
@@ -75,4 +75,4 @@ const DeleteTeacherDialog: React.FC<DeleteTeacherDialogProps> = ({
   );
 };
 
-export default DeleteTeacherDialog;
+export default DeleteStudentDialog;

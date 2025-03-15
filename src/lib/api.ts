@@ -1,4 +1,3 @@
-
 import { 
   Student, 
   Teacher, 
@@ -432,18 +431,143 @@ class ApiClient {
     return students;
   }
   
-  async getStudentById(id: string): Promise<Student | null> {
+  async getStudentById(id: string, token: string | null): Promise<Student | null> {
+    if (token) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/students/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch student');
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Failed to fetch student:', error);
+        // Fallback to mock data
+        return STUDENTS.find(s => s.id === id) || null;
+      }
+    }
+    
+    // Fallback for demo/development
     await delay(500);
     return STUDENTS.find(s => s.id === id) || null;
   }
   
-  async createStudent(student: Omit<Student, "id">): Promise<Student> {
+  async createStudent(student: Omit<Student, "id">, token: string | null): Promise<Student> {
+    if (token) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/students`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(student),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to create student');
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('API create student error:', error);
+        // Fallback to mock data
+        const newStudent = {
+          ...student,
+          id: Math.random().toString(36).substr(2, 9)
+        };
+        return newStudent;
+      }
+    }
+    
+    // Fallback for demo/development
     await delay(800);
     const newStudent = {
       ...student,
       id: Math.random().toString(36).substr(2, 9)
     };
     return newStudent;
+  }
+  
+  async updateStudent(id: string, student: Partial<Student>, token: string | null): Promise<Student> {
+    if (token) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/students/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(student),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to update student');
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('API update student error:', error);
+        // Fallback to mock data
+        const studentIndex = STUDENTS.findIndex(s => s.id === id);
+        if (studentIndex === -1) {
+          throw new Error("Student not found");
+        }
+        
+        const updatedStudent = {
+          ...STUDENTS[studentIndex],
+          ...student
+        };
+        
+        return updatedStudent;
+      }
+    }
+    
+    // Fallback for demo/development
+    await delay(700);
+    const studentIndex = STUDENTS.findIndex(s => s.id === id);
+    if (studentIndex === -1) {
+      throw new Error("Student not found");
+    }
+    
+    const updatedStudent = {
+      ...STUDENTS[studentIndex],
+      ...student
+    };
+    
+    return updatedStudent;
+  }
+  
+  async deleteStudent(id: string, token: string | null): Promise<boolean> {
+    if (token) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/students/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to delete student');
+        }
+        
+        return true;
+      } catch (error) {
+        console.error('API delete student error:', error);
+        // Fallback to mock data
+        return true;
+      }
+    }
+    
+    // Fallback for demo/development
+    await delay(600);
+    return true;
   }
   
   // Teachers
@@ -501,101 +625,146 @@ class ApiClient {
     return teachers;
   }
   
-  async getTeacherById(id: string): Promise<Teacher | null> {
+  async getTeacherById(id: string, token: string | null): Promise<Teacher | null> {
+    if (token) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/teachers/${id}`, {
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to fetch teacher');
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('Failed to fetch teacher:', error);
+        // Fallback to mock data
+        return TEACHERS.find(t => t.id === id) || null;
+      }
+    }
+    
+    // Fallback for demo/development
     await delay(500);
     return TEACHERS.find(t => t.id === id) || null;
   }
   
-  async createTeacher(teacher: Omit<Teacher, "id">): Promise<Teacher> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/teachers`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        },
-        body: JSON.stringify(teacher),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to create teacher');
+  async createTeacher(teacher: Omit<Teacher, "id">, token: string | null): Promise<Teacher> {
+    if (token) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/teachers`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(teacher),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to create teacher');
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('API create teacher error:', error);
+        
+        // Fallback for demo/development
+        const newTeacher = {
+          ...teacher,
+          id: Math.random().toString(36).substr(2, 9)
+        };
+        return newTeacher;
       }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('API create teacher error:', error);
-      
-      // Fallback for demo/development
-      await delay(800);
-      const newTeacher = {
-        ...teacher,
-        id: Math.random().toString(36).substr(2, 9)
-      };
-      return newTeacher;
     }
+    
+    // Fallback for demo/development
+    await delay(800);
+    const newTeacher = {
+      ...teacher,
+      id: Math.random().toString(36).substr(2, 9)
+    };
+    return newTeacher;
   }
   
-  async updateTeacher(id: string, teacher: Partial<Teacher>): Promise<Teacher> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/teachers/${id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        },
-        body: JSON.stringify(teacher),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to update teacher');
+  async updateTeacher(id: string, teacher: Partial<Teacher>, token: string | null): Promise<Teacher> {
+    if (token) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/teachers/${id}`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify(teacher),
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to update teacher');
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error('API update teacher error:', error);
+        
+        // Fallback for demo/development
+        const teacherIndex = TEACHERS.findIndex(t => t.id === id);
+        if (teacherIndex === -1) {
+          throw new Error("Teacher not found");
+        }
+        
+        const updatedTeacher = {
+          ...TEACHERS[teacherIndex],
+          ...teacher
+        };
+        
+        return updatedTeacher;
       }
-      
-      return await response.json();
-    } catch (error) {
-      console.error('API update teacher error:', error);
-      
-      // Fallback for demo/development
-      await delay(700);
-      const teacherIndex = TEACHERS.findIndex(t => t.id === id);
-      if (teacherIndex === -1) {
-        throw new Error("Teacher not found");
-      }
-      
-      const updatedTeacher = {
-        ...TEACHERS[teacherIndex],
-        ...teacher
-      };
-      
-      return updatedTeacher;
     }
+    
+    // Fallback for demo/development
+    await delay(700);
+    const teacherIndex = TEACHERS.findIndex(t => t.id === id);
+    if (teacherIndex === -1) {
+      throw new Error("Teacher not found");
+    }
+    
+    const updatedTeacher = {
+      ...TEACHERS[teacherIndex],
+      ...teacher
+    };
+    
+    return updatedTeacher;
   }
   
-  async deleteTeacher(id: string): Promise<boolean> {
-    try {
-      const response = await fetch(`${API_BASE_URL}/teachers/${id}`, {
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('accessToken')}`
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error('Failed to delete teacher');
+  async deleteTeacher(id: string, token: string | null): Promise<boolean> {
+    if (token) {
+      try {
+        const response = await fetch(`${API_BASE_URL}/teachers/${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${token}`
+          },
+        });
+        
+        if (!response.ok) {
+          throw new Error('Failed to delete teacher');
+        }
+        
+        return true;
+      } catch (error) {
+        console.error('API delete teacher error:', error);
+        
+        // Fallback for demo/development
+        return true;
       }
-      
-      return true;
-    } catch (error) {
-      console.error('API delete teacher error:', error);
-      
-      // Fallback for demo/development
-      await delay(600);
-      const teacherIndex = TEACHERS.findIndex(t => t.id === id);
-      if (teacherIndex === -1) {
-        throw new Error("Teacher not found");
-      }
-      
-      return true;
     }
+    
+    // Fallback for demo/development
+    await delay(600);
+    return true;
   }
   
   async getClasses(token: string | null, query?: string): Promise<Class[]> {

@@ -92,6 +92,33 @@ async def create_student(
         raise HTTPException(status_code=403, detail="Not authorized")
     return add_student(student)
 
+@app.put("/api/students/{student_id}", response_model=Student)
+async def update_student_endpoint(
+    student_id: str,
+    student_data: StudentCreate,  # Using StudentCreate for now
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role not in ["admin", "teacher"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    updated_student = update_student(student_id, student_data)
+    if not updated_student:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return updated_student
+
+@app.delete("/api/students/{student_id}", response_model=dict)
+async def delete_student_endpoint(
+    student_id: str,
+    current_user: User = Depends(get_current_user)
+):
+    if current_user.role not in ["admin"]:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    success = delete_student(student_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Student not found")
+    return {"success": True}
+
 # Teachers endpoints
 @app.get("/api/teachers", response_model=List[Teacher])
 async def list_teachers(

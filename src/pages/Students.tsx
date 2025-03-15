@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Student } from '@/lib/types';
@@ -26,8 +27,12 @@ import { Badge } from '@/components/ui/badge';
 import { Skeleton } from '@/components/ui/skeleton';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
+import { api } from '@/lib/api';
 
-const API_BASE_URL = 'http://192.168.1.38:9090/api';
+// Import the dialog components
+import StudentFormDialog from '@/components/students/StudentFormDialog';
+import StudentProfileDialog from '@/components/students/StudentProfileDialog';
+import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
 
 const Students = () => {
   const { user, accessToken } = useAuth();
@@ -35,31 +40,19 @@ const Students = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
+  
+  // State for managing dialogs
+  const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
+  const [isEditStudentOpen, setIsEditStudentOpen] = useState(false);
+  const [isViewProfileOpen, setIsViewProfileOpen] = useState(false);
+  const [isDeleteStudentOpen, setIsDeleteStudentOpen] = useState(false);
+  const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
 
   useEffect(() => {
     const fetchStudents = async () => {
       try {
         setIsLoading(true);
-        
-        // Use access token from AuthContext
-        const headers: HeadersInit = {
-          'Content-Type': 'application/json'
-        };
-
-        // Add authorization header if we have an access token
-        if (accessToken) {
-          headers['Authorization'] = `Bearer ${accessToken}`;
-        }
-        
-        const response = await fetch(`${API_BASE_URL}/students`, {
-          headers
-        });
-        
-        if (!response.ok) {
-          throw new Error(`Error: ${response.status}`);
-        }
-        
-        const data = await response.json();
+        const data = await api.getStudents(accessToken);
         setStudents(data);
         setFilteredStudents(data);
       } catch (error) {
@@ -104,6 +97,38 @@ const Students = () => {
       .toUpperCase();
   };
 
+  // Helper function to format date
+  const formatDate = (dateString: string) => {
+    const options: Intl.DateTimeFormatOptions = { year: 'numeric', month: 'short', day: 'numeric' };
+    return new Date(dateString).toLocaleDateString(undefined, options);
+  };
+
+  // Handle removing a student
+  const handleRemoveStudent = async () => {
+    if (!selectedStudent) return;
+    
+    try {
+      // Refresh the student list after successful deletion
+      handleStudentAdded();
+    } catch (error) {
+      console.error('Error refreshing students list after removal:', error);
+    }
+  };
+
+  // Handle refreshing the student list after adding a new student
+  const handleStudentAdded = async () => {
+    try {
+      setIsLoading(true);
+      const data = await api.getStudents(accessToken);
+      setStudents(data);
+      setFilteredStudents(data);
+    } catch (error) {
+      console.error('Error refreshing students:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div>
       <DashboardHeader
@@ -124,7 +149,10 @@ const Students = () => {
             <Button variant="outline" size="icon">
               <Filter className="h-4 w-4" />
             </Button>
-            <Button className="flex-1 sm:flex-none">
+            <Button 
+              className="flex-1 sm:flex-none"
+              onClick={() => setIsAddStudentOpen(true)}
+            >
               <Plus className="h-4 w-4 mr-2" />
               Add Student
             </Button>
@@ -189,7 +217,7 @@ const Students = () => {
                     <td className="py-3 px-4 text-gray-500 hidden md:table-cell">
                       <div className="flex items-center">
                         <CalendarClock size={14} className="text-gray-400 mr-1.5" />
-                        <span>{student.enrollmentDate}</span>
+                        <span>{formatDate(student.enrollmentDate)}</span>
                       </div>
                     </td>
                     <td className="py-3 px-4 hidden lg:table-cell">
@@ -237,12 +265,32 @@ const Students = () => {
                         <DropdownMenuContent align="end" className="w-56">
                           <DropdownMenuLabel>Actions</DropdownMenuLabel>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem>View Profile</DropdownMenuItem>
-                          <DropdownMenuItem>Edit Details</DropdownMenuItem>
-                          <DropdownMenuItem>Attendance History</DropdownMenuItem>
-                          <DropdownMenuItem>Grade Report</DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedStudent(student);
+                            setIsViewProfileOpen(true);
+                          }}>
+                            View Profile
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => {
+                            setSelectedStudent(student);
+                            setIsEditStudentOpen(true);
+                          }}>
+                            Edit Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            Attendance History
+                          </DropdownMenuItem>
+                          <DropdownMenuItem>
+                            Grade Report
+                          </DropdownMenuItem>
                           <DropdownMenuSeparator />
-                          <DropdownMenuItem className="text-red-500 focus:text-red-500">
+                          <DropdownMenuItem 
+                            className="text-red-500 focus:text-red-500"
+                            onClick={() => {
+                              setSelectedStudent(student);
+                              setIsDeleteStudentOpen(true);
+                            }}
+                          >
                             Remove Student
                           </DropdownMenuItem>
                         </DropdownMenuContent>
@@ -269,6 +317,52 @@ const Students = () => {
           </div>
         </div>
       </div>
+
+      {/* Add Student Dialog */}
+      <StudentFormDialog 
+        isOpen={isAddStudentOpen}
+        onClose={() => setIsAddStudentOpen(false)}
+        onSuccess={handleStudentAdded}
+      />
+
+      {/* Edit Student Dialog */}
+      {selectedStudent && (
+        <StudentFormDialog 
+          isOpen={isEditStudentOpen}
+          onClose={() => {
+            setIsEditStudentOpen(false);
+            setSelectedStudent(null);
+          }}
+          student={selectedStudent}
+          onSuccess={handleStudentAdded}
+        />
+      )}
+
+      {/* View Profile Dialog */}
+      {selectedStudent && (
+        <StudentProfileDialog 
+          isOpen={isViewProfileOpen}
+          onClose={() => {
+            setIsViewProfileOpen(false);
+            setSelectedStudent(null);
+          }}
+          student={selectedStudent}
+        />
+      )}
+
+      {/* Delete Confirmation Dialog */}
+      {selectedStudent && (
+        <DeleteStudentDialog 
+          isOpen={isDeleteStudentOpen}
+          onClose={() => {
+            setIsDeleteStudentOpen(false);
+            setSelectedStudent(null);
+          }}
+          onConfirm={handleRemoveStudent}
+          studentId={selectedStudent.id}
+          studentName={selectedStudent.name}
+        />
+      )}
     </div>
   );
 };

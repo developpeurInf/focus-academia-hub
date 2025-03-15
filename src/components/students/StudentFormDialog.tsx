@@ -3,7 +3,7 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
-import { Teacher } from '@/lib/types';
+import { Student } from '@/lib/types';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
@@ -25,84 +25,92 @@ import {
 } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 // Define the form schema using zod
-const teacherFormSchema = z.object({
+const studentFormSchema = z.object({
   name: z.string().min(2, { message: 'Name must be at least 2 characters.' }),
   email: z.string().email({ message: 'Please enter a valid email address.' }),
-  subject: z.string().min(1, { message: 'Subject is required.' }),
+  grade: z.string().min(1, { message: 'Grade is required.' }),
   phoneNumber: z.string().optional(),
-  department: z.string().optional(),
-  qualification: z.string().optional(),
-  joinDate: z.string(),
+  dateOfBirth: z.string().optional(),
+  address: z.string().optional(),
+  enrollmentDate: z.string(),
+  status: z.enum(['active', 'inactive']),
 });
 
-type TeacherFormValues = z.infer<typeof teacherFormSchema>;
+type StudentFormValues = z.infer<typeof studentFormSchema>;
 
-type TeacherFormDialogProps = {
+type StudentFormDialogProps = {
   isOpen: boolean;
   onClose: () => void;
-  teacher?: Teacher;
+  student?: Student;
   onSuccess?: () => void;
 };
 
-const TeacherFormDialog: React.FC<TeacherFormDialogProps> = ({
+const StudentFormDialog: React.FC<StudentFormDialogProps> = ({
   isOpen,
   onClose,
-  teacher,
+  student,
   onSuccess,
 }) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { accessToken } = useAuth();
-  const isEditing = !!teacher;
+  const isEditing = !!student;
 
   // Initialize the form with default values
-  const form = useForm<TeacherFormValues>({
-    resolver: zodResolver(teacherFormSchema),
+  const form = useForm<StudentFormValues>({
+    resolver: zodResolver(studentFormSchema),
     defaultValues: {
-      name: teacher?.name || '',
-      email: teacher?.email || '',
-      subject: teacher?.subject || '',
-      phoneNumber: teacher?.phoneNumber || '',
-      department: teacher?.department || '',
-      qualification: teacher?.qualification || '',
-      joinDate: teacher?.joinDate || new Date().toISOString().split('T')[0],
+      name: student?.name || '',
+      email: student?.email || '',
+      grade: student?.grade || '',
+      phoneNumber: student?.phoneNumber || '',
+      dateOfBirth: student?.dateOfBirth || '',
+      address: student?.address || '',
+      enrollmentDate: student?.enrollmentDate || new Date().toISOString().split('T')[0],
+      status: student?.status || 'active',
     },
   });
 
-  const onSubmit = async (data: TeacherFormValues) => {
+  const onSubmit = async (data: StudentFormValues) => {
     try {
       setIsSubmitting(true);
       
-      if (isEditing && teacher) {
-        // Update existing teacher
-        await api.updateTeacher(teacher.id, {
+      if (isEditing && student) {
+        // Update existing student
+        await api.updateStudent(student.id, {
           name: data.name,
           email: data.email,
-          subject: data.subject,
-          joinDate: data.joinDate,
+          grade: data.grade,
+          enrollmentDate: data.enrollmentDate,
           phoneNumber: data.phoneNumber,
-          department: data.department,
-          qualification: data.qualification,
+          dateOfBirth: data.dateOfBirth,
+          address: data.address,
+          status: data.status,
         }, accessToken);
         
-        toast.success('Teacher updated successfully', {
+        toast.success('Student updated successfully', {
           description: `${data.name}'s information has been updated.`,
         });
       } else {
-        // Create a new teacher
-        await api.createTeacher({
-          name: data.name,           
-          email: data.email,         
-          subject: data.subject,     
-          joinDate: data.joinDate,   
-          avatar: '/placeholder.svg', 
+        // Create a new student
+        await api.createStudent({
+          name: data.name,
+          email: data.email,
+          grade: data.grade,
+          enrollmentDate: data.enrollmentDate,
+          avatar: '/placeholder.svg',
           phoneNumber: data.phoneNumber,
-          department: data.department,
-          qualification: data.qualification,
+          dateOfBirth: data.dateOfBirth,
+          address: data.address,
+          status: data.status,
+          // Default values for new students
+          attendance: 100,
+          averageGrade: 0,
         }, accessToken);
         
-        toast.success('Teacher added successfully', {
+        toast.success('Student added successfully', {
           description: `${data.name} has been added to the system.`,
         });
       }
@@ -113,8 +121,8 @@ const TeacherFormDialog: React.FC<TeacherFormDialogProps> = ({
       
       onClose();
     } catch (error) {
-      console.error('Error saving teacher:', error);
-      toast.error('Failed to save teacher', {
+      console.error('Error saving student:', error);
+      toast.error('Failed to save student', {
         description: 'Please try again or contact support if the issue persists.',
       });
     } finally {
@@ -127,7 +135,7 @@ const TeacherFormDialog: React.FC<TeacherFormDialogProps> = ({
       <DialogContent className="sm:max-w-[550px]">
         <DialogHeader>
           <DialogTitle>
-            {isEditing ? 'Edit Teacher' : 'Add New Teacher'}
+            {isEditing ? 'Edit Student' : 'Add New Student'}
           </DialogTitle>
         </DialogHeader>
         
@@ -155,7 +163,7 @@ const TeacherFormDialog: React.FC<TeacherFormDialogProps> = ({
                   <FormItem>
                     <FormLabel>Email</FormLabel>
                     <FormControl>
-                      <Input placeholder="teacher@focus.edu" {...field} />
+                      <Input placeholder="student@focus.edu" {...field} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -164,12 +172,26 @@ const TeacherFormDialog: React.FC<TeacherFormDialogProps> = ({
               
               <FormField
                 control={form.control}
-                name="subject"
+                name="grade"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Subject</FormLabel>
+                    <FormLabel>Grade</FormLabel>
                     <FormControl>
-                      <Input placeholder="Mathematics" {...field} />
+                      <Select 
+                        value={field.value} 
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select grade" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="9th">9th Grade</SelectItem>
+                          <SelectItem value="10th">10th Grade</SelectItem>
+                          <SelectItem value="11th">11th Grade</SelectItem>
+                          <SelectItem value="12th">12th Grade</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -192,40 +214,66 @@ const TeacherFormDialog: React.FC<TeacherFormDialogProps> = ({
               
               <FormField
                 control={form.control}
-                name="department"
+                name="dateOfBirth"
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>Department</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Science" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="qualification"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Qualification</FormLabel>
-                    <FormControl>
-                      <Input placeholder="Ph.D. in Mathematics" {...field} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              
-              <FormField
-                control={form.control}
-                name="joinDate"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Join Date</FormLabel>
+                    <FormLabel>Date of Birth</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="address"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Address</FormLabel>
+                    <FormControl>
+                      <Input placeholder="123 School St, City" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="enrollmentDate"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Enrollment Date</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={form.control}
+                name="status"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Status</FormLabel>
+                    <FormControl>
+                      <Select 
+                        value={field.value} 
+                        onValueChange={field.onChange}
+                        defaultValue={field.value}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select status" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="active">Active</SelectItem>
+                          <SelectItem value="inactive">Inactive</SelectItem>
+                        </SelectContent>
+                      </Select>
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -246,7 +294,7 @@ const TeacherFormDialog: React.FC<TeacherFormDialogProps> = ({
                 type="submit" 
                 disabled={isSubmitting}
               >
-                {isSubmitting ? 'Saving...' : isEditing ? 'Update Teacher' : 'Add Teacher'}
+                {isSubmitting ? 'Saving...' : isEditing ? 'Update Student' : 'Add Student'}
               </Button>
             </DialogFooter>
           </form>
@@ -256,4 +304,4 @@ const TeacherFormDialog: React.FC<TeacherFormDialogProps> = ({
   );
 };
 
-export default TeacherFormDialog;
+export default StudentFormDialog;
