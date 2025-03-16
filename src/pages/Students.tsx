@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { Student } from '@/lib/types';
@@ -33,6 +32,7 @@ import { api } from '@/lib/api';
 import StudentFormDialog from '@/components/students/StudentFormDialog';
 import StudentProfileDialog from '@/components/students/StudentProfileDialog';
 import DeleteStudentDialog from '@/components/students/DeleteStudentDialog';
+import StudentFilters, { StudentFilters as StudentFiltersType } from '@/components/students/StudentFilters';
 
 const Students = () => {
   const { user, accessToken } = useAuth();
@@ -40,6 +40,12 @@ const Students = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [filteredStudents, setFilteredStudents] = useState<Student[]>([]);
+  
+  // Filtering states
+  const [filters, setFilters] = useState<StudentFiltersType>({
+    grades: [],
+    status: [],
+  });
   
   // State for managing dialogs
   const [isAddStudentOpen, setIsAddStudentOpen] = useState(false);
@@ -74,19 +80,38 @@ const Students = () => {
     }
   }, [accessToken]);
 
+  // Extract unique grades for filter
+  const uniqueGrades = [...new Set(students.map(student => student.grade))];
+
   useEffect(() => {
-    if (searchQuery.trim() === '') {
-      setFilteredStudents(students);
-    } else {
+    let filtered = [...students];
+    
+    // Apply search filter
+    if (searchQuery.trim() !== '') {
       const lowercasedQuery = searchQuery.toLowerCase();
-      const filtered = students.filter(student => 
+      filtered = filtered.filter(student => 
         student.name.toLowerCase().includes(lowercasedQuery) || 
         student.email.toLowerCase().includes(lowercasedQuery) || 
         student.grade.toLowerCase().includes(lowercasedQuery)
       );
-      setFilteredStudents(filtered);
     }
-  }, [searchQuery, students]);
+    
+    // Apply grade filters
+    if (filters.grades.length > 0) {
+      filtered = filtered.filter(student => 
+        filters.grades.includes(student.grade)
+      );
+    }
+    
+    // Apply status filters
+    if (filters.status.length > 0) {
+      filtered = filtered.filter(student => 
+        filters.status.includes(student.status)
+      );
+    }
+    
+    setFilteredStudents(filtered);
+  }, [searchQuery, students, filters]);
 
   // Helper function to get initials from name
   const getInitials = (name: string) => {
@@ -137,6 +162,11 @@ const Students = () => {
     }
   };
 
+  // Handle filter changes
+  const handleFilterChange = (newFilters: StudentFiltersType) => {
+    setFilters(newFilters);
+  };
+
   return (
     <div>
       <DashboardHeader
@@ -154,9 +184,15 @@ const Students = () => {
             />
           </div>
           <div className="flex gap-2 w-full sm:w-auto">
-            <Button variant="outline" size="icon">
-              <Filter className="h-4 w-4" />
-            </Button>
+            <StudentFilters 
+              trigger={
+                <Button variant="outline" size="icon">
+                  <Filter className="h-4 w-4" />
+                </Button>
+              }
+              onFiltersChange={handleFilterChange}
+              availableGrades={uniqueGrades}
+            />
             <Button 
               className="flex-1 sm:flex-none"
               onClick={() => setIsAddStudentOpen(true)}
@@ -199,7 +235,7 @@ const Students = () => {
               ) : filteredStudents.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="py-8 text-center text-gray-500">
-                    {accessToken ? "No students found. Try a different search term." : "Please log in to view students."}
+                    {accessToken ? "No students found. Try a different search term or filter." : "Please log in to view students."}
                   </td>
                 </tr>
               ) : (

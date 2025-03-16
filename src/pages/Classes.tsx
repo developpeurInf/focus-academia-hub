@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
@@ -35,7 +34,8 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
 import ClassFormDialog from '@/components/classes/ClassFormDialog';
 import ClassFilters, { ClassFilters as ClassFiltersType } from '@/components/classes/ClassFilters';
-import { toast } from '@/hooks/use-toast';
+import { toast } from 'sonner';
+import DeleteClassDialog from '@/components/classes/DeleteClassDialog';
 
 const Classes = () => {
   const { user, accessToken } = useAuth();
@@ -45,6 +45,8 @@ const Classes = () => {
   const [filteredClasses, setFilteredClasses] = useState<Class[]>([]);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isAddClassOpen, setIsAddClassOpen] = useState(false);
+  const [isDeleteClassOpen, setIsDeleteClassOpen] = useState(false);
+  const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [filters, setFilters] = useState<ClassFiltersType>({
     subjects: [],
     weekdays: [],
@@ -121,6 +123,27 @@ const Classes = () => {
     return `${schedules.length} ${schedules.length === 1 ? 'session' : 'sessions'} per week`;
   };
 
+  const handleClassDeleted = async () => {
+    try {
+      setIsLoading(true);
+      const data = await api.getClasses(accessToken);
+      setClasses(data);
+      setFilteredClasses(data);
+      toast.success('Class successfully removed');
+    } catch (error) {
+      console.error('Error refreshing classes:', error);
+      toast.error('Failed to refresh class list');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDeleteClick = (classItem: Class) => {
+    setSelectedClass(classItem);
+    setIsDeleteClassOpen(true);
+  };
+
+  // Add delete class dialog to the JSX near the end of the component
   return (
     <div>
       <DashboardHeader
@@ -212,7 +235,10 @@ const Classes = () => {
                         <DropdownMenuItem>Manage Students</DropdownMenuItem>
                         <DropdownMenuItem>View Schedule</DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem className="text-red-500 focus:text-red-500">
+                        <DropdownMenuItem 
+                          className="text-red-500 focus:text-red-500"
+                          onClick={() => handleDeleteClick(classItem)}
+                        >
                           Delete Class
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -313,7 +339,10 @@ const Classes = () => {
                             <DropdownMenuItem>Manage Students</DropdownMenuItem>
                             <DropdownMenuItem>View Schedule</DropdownMenuItem>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem className="text-red-500 focus:text-red-500">
+                            <DropdownMenuItem 
+                              className="text-red-500 focus:text-red-500"
+                              onClick={() => handleDeleteClick(classItem)}
+                            >
                               Delete Class
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -349,6 +378,20 @@ const Classes = () => {
         onOpenChange={setIsAddClassOpen}
         onClassCreated={handleClassCreated}
       />
+      
+      {/* Delete Class Dialog */}
+      {selectedClass && (
+        <DeleteClassDialog 
+          isOpen={isDeleteClassOpen}
+          onClose={() => {
+            setIsDeleteClassOpen(false);
+            setSelectedClass(null);
+          }}
+          onConfirm={handleClassDeleted}
+          classId={selectedClass.id}
+          className={selectedClass.name}
+        />
+      )}
     </div>
   );
 };
