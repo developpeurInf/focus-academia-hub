@@ -15,7 +15,9 @@ from models import (
 )
 from database import (
     get_users, get_students, get_teachers, get_classes, get_activities,
-    add_student, add_teacher, update_teacher, delete_teacher, add_class, update_class, delete_class, get_dashboard_stats,
+    add_student, add_teacher, update_teacher, delete_teacher, 
+    update_student, delete_student,
+    add_class, update_class, delete_class, get_dashboard_stats,
     get_user_by_email, authenticate_user
 )
 from auth import create_access_token, get_current_user, ACCESS_TOKEN_EXPIRE_MINUTES

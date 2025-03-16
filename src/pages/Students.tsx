@@ -104,18 +104,25 @@ const Students = () => {
   };
 
   // Handle removing a student
-  const handleRemoveStudent = async () => {
-    if (!selectedStudent) return;
-    
+  const handleRemoveStudent = async (studentId: string) => {
     try {
+      await api.deleteStudent(studentId, accessToken);
+      toast.success('Student removed successfully');
+      
       // Refresh the student list after successful deletion
-      handleStudentAdded();
+      const updatedStudents = await api.getStudents(accessToken);
+      setStudents(updatedStudents);
+      setFilteredStudents(updatedStudents);
     } catch (error) {
-      console.error('Error refreshing students list after removal:', error);
+      console.error('Error removing student:', error);
+      toast.error('Failed to remove student. Please try again.');
+    } finally {
+      setIsDeleteStudentOpen(false);
+      setSelectedStudent(null);
     }
   };
 
-  // Handle refreshing the student list after adding a new student
+  // Handle refreshing the student list after adding or updating a student
   const handleStudentAdded = async () => {
     try {
       setIsLoading(true);
@@ -124,6 +131,7 @@ const Students = () => {
       setFilteredStudents(data);
     } catch (error) {
       console.error('Error refreshing students:', error);
+      toast.error('Failed to refresh student list');
     } finally {
       setIsLoading(false);
     }
@@ -358,7 +366,7 @@ const Students = () => {
             setIsDeleteStudentOpen(false);
             setSelectedStudent(null);
           }}
-          onConfirm={handleRemoveStudent}
+          onConfirm={() => handleRemoveStudent(selectedStudent.id)}
           studentId={selectedStudent.id}
           studentName={selectedStudent.name}
         />

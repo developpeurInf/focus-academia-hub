@@ -87,7 +87,7 @@ const StudentFormDialog: React.FC<StudentFormDialogProps> = ({
           phoneNumber: data.phoneNumber,
           dateOfBirth: data.dateOfBirth,
           address: data.address,
-          status: data.status,
+          status: data.status as "active" | "inactive",
         }, accessToken);
         
         toast.success('Student updated successfully', {
@@ -104,7 +104,7 @@ const StudentFormDialog: React.FC<StudentFormDialogProps> = ({
           phoneNumber: data.phoneNumber,
           dateOfBirth: data.dateOfBirth,
           address: data.address,
-          status: data.status,
+          status: data.status as "active" | "inactive",
           // Default values for new students
           attendance: 100,
           averageGrade: 0,
