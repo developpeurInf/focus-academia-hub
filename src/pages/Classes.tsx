@@ -1,4 +1,3 @@
-
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
@@ -15,7 +14,9 @@ import {
   Clock,
   Eye,
   Pencil,
-  Trash
+  Trash,
+  CalendarCheck,
+  ListCheck
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -40,6 +41,8 @@ import ClassFormDialog from '@/components/classes/ClassFormDialog';
 import ClassFilters, { ClassFilters as ClassFiltersType } from '@/components/classes/ClassFilters';
 import { toast } from 'sonner';
 import DeleteClassDialog from '@/components/classes/DeleteClassDialog';
+import ClassScheduleDialog from '@/components/classes/ClassScheduleDialog';
+import ClassAttendanceDialog from '@/components/classes/ClassAttendanceDialog';
 import { 
   Dialog,
   DialogContent,
@@ -60,6 +63,8 @@ const Classes = () => {
   const [isEditClassOpen, setIsEditClassOpen] = useState(false);
   const [isViewDetailsOpen, setIsViewDetailsOpen] = useState(false);
   const [isManageStudentsOpen, setIsManageStudentsOpen] = useState(false);
+  const [isClassScheduleOpen, setIsClassScheduleOpen] = useState(false);
+  const [isClassAttendanceOpen, setIsClassAttendanceOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [filters, setFilters] = useState<ClassFiltersType>({
     subjects: [],
@@ -157,6 +162,16 @@ const Classes = () => {
     setIsDeleteClassOpen(true);
   };
 
+  const handleViewScheduleClick = (classItem: Class) => {
+    setSelectedClass(classItem);
+    setIsClassScheduleOpen(true);
+  };
+
+  const handleViewAttendanceClick = (classItem: Class) => {
+    setSelectedClass(classItem);
+    setIsClassAttendanceOpen(true);
+  };
+
   const formatScheduleTime = (schedule: { day: string; startTime: string; endTime: string; room: string }[]) => {
     return schedule.map(s => `${s.day}: ${s.startTime} - ${s.endTime} (Room ${s.room})`).join('\n');
   };
@@ -245,13 +260,22 @@ const Classes = () => {
                           <MoreHorizontal size={16} />
                         </Button>
                       </DropdownMenuTrigger>
-                      <DropdownMenuContent align="end" className="w-48">
+                      <DropdownMenuContent align="end" className="w-56">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => handleViewDetailsClick(classItem)}>
                           <Eye className="mr-2 h-4 w-4" />
                           View Details
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleViewScheduleClick(classItem)}>
+                          <Calendar className="mr-2 h-4 w-4" />
+                          View Schedule
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleViewAttendanceClick(classItem)}>
+                          <CalendarCheck className="mr-2 h-4 w-4" />
+                          Manage Attendance
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
                         <DropdownMenuItem onClick={() => handleEditClick(classItem)}>
                           <Pencil className="mr-2 h-4 w-4" />
                           Edit Class
@@ -287,9 +311,24 @@ const Classes = () => {
                     </div>
                   </div>
                 </CardContent>
-                <CardFooter className="p-4 bg-gray-50 border-t border-gray-100">
-                  <Button variant="outline" size="sm" className="w-full" onClick={() => handleViewDetailsClick(classItem)}>
-                    View Class
+                <CardFooter className="p-4 bg-gray-50 border-t border-gray-100 flex flex-wrap gap-2">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => handleViewScheduleClick(classItem)}
+                  >
+                    <Calendar className="mr-1 h-3.5 w-3.5" />
+                    Schedule
+                  </Button>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="flex-1"
+                    onClick={() => handleViewAttendanceClick(classItem)}
+                  >
+                    <ListCheck className="mr-1 h-3.5 w-3.5" />
+                    Attendance
                   </Button>
                 </CardFooter>
               </Card>
@@ -358,13 +397,22 @@ const Classes = () => {
                               <MoreHorizontal size={16} />
                             </Button>
                           </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
+                          <DropdownMenuContent align="end" className="w-56">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => handleViewDetailsClick(classItem)}>
                               <Eye className="mr-2 h-4 w-4" />
                               View Details
                             </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleViewScheduleClick(classItem)}>
+                              <Calendar className="mr-2 h-4 w-4" />
+                              View Schedule
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleViewAttendanceClick(classItem)}>
+                              <CalendarCheck className="mr-2 h-4 w-4" />
+                              Manage Attendance
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
                             <DropdownMenuItem onClick={() => handleEditClick(classItem)}>
                               <Pencil className="mr-2 h-4 w-4" />
                               Edit Class
@@ -426,6 +474,30 @@ const Classes = () => {
           onConfirm={handleClassDeleted}
           classId={selectedClass.id}
           className={selectedClass.name}
+        />
+      )}
+
+      {/* Class Schedule Dialog */}
+      {selectedClass && (
+        <ClassScheduleDialog
+          isOpen={isClassScheduleOpen}
+          onClose={() => {
+            setIsClassScheduleOpen(false);
+            setSelectedClass(null);
+          }}
+          classItem={selectedClass}
+        />
+      )}
+
+      {/* Class Attendance Dialog */}
+      {selectedClass && (
+        <ClassAttendanceDialog
+          isOpen={isClassAttendanceOpen}
+          onClose={() => {
+            setIsClassAttendanceOpen(false);
+            setSelectedClass(null);
+          }}
+          classItem={selectedClass}
         />
       )}
 

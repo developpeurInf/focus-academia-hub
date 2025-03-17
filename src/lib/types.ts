@@ -63,6 +63,19 @@ export interface Attendance {
   class: string;
 }
 
+export interface ClassAttendance {
+  id: string;
+  classId: string;
+  date: string;
+  attendees: StudentAttendance[];
+}
+
+export interface StudentAttendance {
+  studentId: string;
+  studentName: string;
+  status: "present" | "absent" | "late" | "excused";
+}
+
 export interface Grade {
   id: string;
   studentId: string;
