@@ -9,7 +9,9 @@ import {
   DollarSign, 
   Bell, 
   Settings,
-  ClipboardList
+  ClipboardList,
+  CalendarCheck,
+  UserCheck
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { cn } from '@/lib/utils';
@@ -69,7 +71,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isOpen }) => {
     },
     { 
       label: 'Attendance', 
-      icon: ClipboardList, 
+      icon: UserCheck, 
       href: '/attendance', 
       roles: ['admin', 'teacher', 'student', 'parent'] 
     },
