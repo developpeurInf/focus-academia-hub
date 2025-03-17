@@ -2,7 +2,6 @@
 import React, { useState } from 'react';
 import { api } from '@/lib/api';
 import { toast } from 'sonner';
-import { useAuth } from '@/context/AuthContext';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -30,7 +29,6 @@ const DeleteClassDialog: React.FC<DeleteClassDialogProps> = ({
   className,
 }) => {
   const [isDeleting, setIsDeleting] = useState(false);
-  const { accessToken } = useAuth();
 
   const handleDelete = async () => {
     try {

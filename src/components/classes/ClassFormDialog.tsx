@@ -1,15 +1,15 @@
+
 import React from 'react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { CalendarDays, Clock, Home } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { useToast } from '@/components/ui/use-toast';
+import { toast } from 'sonner';
 import { api } from '@/lib/api';
 import { Class, ClassSchedule } from '@/lib/types';
 
@@ -58,7 +58,6 @@ const classSchema = z.object({
 type ClassFormValues = z.infer<typeof classSchema>;
 
 const ClassFormDialog: React.FC<ClassFormDialogProps> = ({ open, onClose, onOpenChange, onClassCreated }) => {
-  const { toast } = useToast();
   const [scheduleItems, setScheduleItems] = React.useState<ClassSchedule[]>([initialScheduleItem]);
 
   const form = useForm<ClassFormValues>({
@@ -93,18 +92,15 @@ const ClassFormDialog: React.FC<ClassFormDialogProps> = ({ open, onClose, onOpen
       
       // Now pass the properly typed data to the API
       const newClass = await api.createClass(classData);
-      toast({
-        title: 'Success',
-        description: 'Class has been created successfully',
+      toast.success('Class created', {
+        description: 'Class has been created successfully'
       });
       onClose();
       onClassCreated && onClassCreated(newClass);
     } catch (error) {
       console.error('Failed to create class:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to create class. Please try again.',
-        variant: 'destructive',
+      toast.error('Failed to create class', {
+        description: 'Please try again or contact support.'
       });
     }
   };

@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { api } from '@/lib/api';
@@ -63,11 +64,7 @@ const Classes = () => {
       setFilteredClasses(data);
     } catch (error) {
       console.error('Error fetching classes:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load classes. Please try again.',
-        variant: 'destructive',
-      });
+      toast.error('Failed to load classes. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -75,7 +72,7 @@ const Classes = () => {
 
   useEffect(() => {
     fetchClasses();
-  }, []);
+  }, [accessToken]);
 
   useEffect(() => {
     let filtered = [...classes];
@@ -143,7 +140,7 @@ const Classes = () => {
     setIsDeleteClassOpen(true);
   };
 
-  // Add delete class dialog to the JSX near the end of the component
+  // Fixed the TypeScript error by removing 'title' and correctly using children
   return (
     <div>
       <DashboardHeader
