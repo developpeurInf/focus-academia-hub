@@ -12,7 +12,10 @@ import {
   Calendar, 
   BookOpen,
   Users,
-  Clock
+  Clock,
+  Eye,
+  Pencil,
+  Trash
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -37,6 +40,13 @@ import ClassFormDialog from '@/components/classes/ClassFormDialog';
 import ClassFilters, { ClassFilters as ClassFiltersType } from '@/components/classes/ClassFilters';
 import { toast } from 'sonner';
 import DeleteClassDialog from '@/components/classes/DeleteClassDialog';
+import { 
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription
+} from '@/components/ui/dialog';
 
 const Classes = () => {
   const { user, accessToken } = useAuth();
@@ -47,6 +57,9 @@ const Classes = () => {
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
   const [isAddClassOpen, setIsAddClassOpen] = useState(false);
   const [isDeleteClassOpen, setIsDeleteClassOpen] = useState(false);
+  const [isEditClassOpen, setIsEditClassOpen] = useState(false);
+  const [isViewDetailsOpen, setIsViewDetailsOpen] = useState(false);
+  const [isManageStudentsOpen, setIsManageStudentsOpen] = useState(false);
   const [selectedClass, setSelectedClass] = useState<Class | null>(null);
   const [filters, setFilters] = useState<ClassFiltersType>({
     subjects: [],
@@ -121,23 +134,31 @@ const Classes = () => {
   };
 
   const handleClassDeleted = async () => {
-    try {
-      setIsLoading(true);
-      const data = await api.getClasses(accessToken);
-      setClasses(data);
-      setFilteredClasses(data);
-      toast.success('Class successfully removed');
-    } catch (error) {
-      console.error('Error refreshing classes:', error);
-      toast.error('Failed to refresh class list');
-    } finally {
-      setIsLoading(false);
-    }
+    fetchClasses();
+  };
+
+  const handleEditClick = (classItem: Class) => {
+    setSelectedClass(classItem);
+    setIsEditClassOpen(true);
+  };
+
+  const handleViewDetailsClick = (classItem: Class) => {
+    setSelectedClass(classItem);
+    setIsViewDetailsOpen(true);
+  };
+
+  const handleManageStudentsClick = (classItem: Class) => {
+    setSelectedClass(classItem);
+    setIsManageStudentsOpen(true);
   };
 
   const handleDeleteClick = (classItem: Class) => {
     setSelectedClass(classItem);
     setIsDeleteClassOpen(true);
+  };
+
+  const formatScheduleTime = (schedule: { day: string; startTime: string; endTime: string; room: string }[]) => {
+    return schedule.map(s => `${s.day}: ${s.startTime} - ${s.endTime} (Room ${s.room})`).join('\n');
   };
 
   // Fixed the TypeScript error by removing 'title' and correctly using children
@@ -227,15 +248,24 @@ const Classes = () => {
                       <DropdownMenuContent align="end" className="w-48">
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem>View Details</DropdownMenuItem>
-                        <DropdownMenuItem>Edit Class</DropdownMenuItem>
-                        <DropdownMenuItem>Manage Students</DropdownMenuItem>
-                        <DropdownMenuItem>View Schedule</DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleViewDetailsClick(classItem)}>
+                          <Eye className="mr-2 h-4 w-4" />
+                          View Details
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleEditClick(classItem)}>
+                          <Pencil className="mr-2 h-4 w-4" />
+                          Edit Class
+                        </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => handleManageStudentsClick(classItem)}>
+                          <Users className="mr-2 h-4 w-4" />
+                          Manage Students
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem 
                           className="text-red-500 focus:text-red-500"
                           onClick={() => handleDeleteClick(classItem)}
                         >
+                          <Trash className="mr-2 h-4 w-4" />
                           Delete Class
                         </DropdownMenuItem>
                       </DropdownMenuContent>
@@ -258,7 +288,7 @@ const Classes = () => {
                   </div>
                 </CardContent>
                 <CardFooter className="p-4 bg-gray-50 border-t border-gray-100">
-                  <Button variant="outline" size="sm" className="w-full">
+                  <Button variant="outline" size="sm" className="w-full" onClick={() => handleViewDetailsClick(classItem)}>
                     View Class
                   </Button>
                 </CardFooter>
@@ -331,15 +361,24 @@ const Classes = () => {
                           <DropdownMenuContent align="end" className="w-48">
                             <DropdownMenuLabel>Actions</DropdownMenuLabel>
                             <DropdownMenuSeparator />
-                            <DropdownMenuItem>View Details</DropdownMenuItem>
-                            <DropdownMenuItem>Edit Class</DropdownMenuItem>
-                            <DropdownMenuItem>Manage Students</DropdownMenuItem>
-                            <DropdownMenuItem>View Schedule</DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleViewDetailsClick(classItem)}>
+                              <Eye className="mr-2 h-4 w-4" />
+                              View Details
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleEditClick(classItem)}>
+                              <Pencil className="mr-2 h-4 w-4" />
+                              Edit Class
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => handleManageStudentsClick(classItem)}>
+                              <Users className="mr-2 h-4 w-4" />
+                              Manage Students
+                            </DropdownMenuItem>
                             <DropdownMenuSeparator />
                             <DropdownMenuItem 
                               className="text-red-500 focus:text-red-500"
                               onClick={() => handleDeleteClick(classItem)}
                             >
+                              <Trash className="mr-2 h-4 w-4" />
                               Delete Class
                             </DropdownMenuItem>
                           </DropdownMenuContent>
@@ -389,6 +428,78 @@ const Classes = () => {
           className={selectedClass.name}
         />
       )}
+
+      {/* View Class Details Dialog */}
+      {selectedClass && (
+        <Dialog open={isViewDetailsOpen} onOpenChange={(open) => !open && setIsViewDetailsOpen(false)}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Class Details</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Name</h3>
+                <p className="mt-1 text-sm">{selectedClass.name}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Subject</h3>
+                <p className="mt-1 text-sm">{selectedClass.subject}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Teacher</h3>
+                <p className="mt-1 text-sm">{selectedClass.teacherName}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Students</h3>
+                <p className="mt-1 text-sm">{selectedClass.studentCount} students enrolled</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-gray-500">Schedule</h3>
+                <div className="mt-1 space-y-1">
+                  {selectedClass.schedule.map((scheduleItem, index) => (
+                    <div key={index} className="text-sm p-2 rounded bg-gray-50">
+                      <span className="font-medium">{scheduleItem.day}:</span> {scheduleItem.startTime} - {scheduleItem.endTime} (Room {scheduleItem.room})
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="flex justify-end mt-4">
+              <Button variant="outline" onClick={() => setIsViewDetailsOpen(false)}>Close</Button>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Placeholder for Edit Class Dialog - Would be an extended version of ClassFormDialog */}
+      <Dialog open={isEditClassOpen} onOpenChange={(open) => !open && setIsEditClassOpen(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Class</DialogTitle>
+            <DialogDescription>
+              This feature is coming soon. You would be able to edit {selectedClass?.name} here.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end mt-4">
+            <Button variant="outline" onClick={() => setIsEditClassOpen(false)}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Placeholder for Manage Students Dialog */}
+      <Dialog open={isManageStudentsOpen} onOpenChange={(open) => !open && setIsManageStudentsOpen(false)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Manage Students</DialogTitle>
+            <DialogDescription>
+              This feature is coming soon. You would be able to manage students for {selectedClass?.name} here.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="flex justify-end mt-4">
+            <Button variant="outline" onClick={() => setIsManageStudentsOpen(false)}>Close</Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
